@@ -26,16 +26,24 @@ jobs:
       - name: Sync Upstream (StardawnAI)
         run: |
           git remote add upstream https://github.com/StardawnAI/n8n-advanced.git
-          git fetch upstream
-          # Wir mergen upstream/main (die Quelle) in dein master
+          
+          # --- RETRY LOOP 1: Git Fetch ---
+          echo "Fetching upstream (5 attempts)..."
+          for i in {1..5}; do
+            git fetch upstream && break
+            echo "Fetch failed (Attempt $i). Waiting 10s..."
+            sleep 10
+          done
+
+          # Merge upstream/main into local master
           git merge upstream/main --no-edit --allow-unrelated-histories || true
 
       - name: Restore README & Patch Dockerfile
         run: |
-          # 1. Deine README wiederherstellen
+          # 1. Restore YOUR Readme (Ignore upstream)
           git checkout HEAD -- README.md
 
-          # 2. Dockerfile im .devcontainer patchen (latest -> next)
+          # 2. Patch Dockerfile in .devcontainer (force latest -> next)
           sed -i 's|n8nio/n8n:latest|n8nio/n8n:next|g' .devcontainer/Dockerfile
 
       - name: Push Changes
@@ -43,9 +51,15 @@ jobs:
           git add README.md .devcontainer/Dockerfile
           
           if git diff-index --quiet HEAD; then
-            echo "Keine Änderungen."
+            echo "No changes to commit."
           else
             git commit -m "chore: sync upstream and force n8n:next"
-            # HIER WAR DER FEHLER: Push zu master, nicht main
-            git push origin master
+            
+            # --- RETRY LOOP 2: Git Push ---
+            echo "Pushing changes (5 attempts)..."
+            for i in {1..5}; do
+              git push origin master && break
+              echo "Push failed (Attempt $i). Waiting 15s..."
+              sleep 15
+            done
           fi
