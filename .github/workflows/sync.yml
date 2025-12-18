@@ -27,12 +27,12 @@ jobs:
         run: |
           git remote add upstream https://github.com/StardawnAI/n8n-advanced.git
           git fetch upstream
-          # Merge Upstream, Konflikte werden im nächsten Schritt überschrieben
+          # Wir mergen upstream/main (die Quelle) in dein master
           git merge upstream/main --no-edit --allow-unrelated-histories || true
 
       - name: Restore README & Patch Dockerfile
         run: |
-          # 1. Deine README wiederherstellen (Upstream ignorieren)
+          # 1. Deine README wiederherstellen
           git checkout HEAD -- README.md
 
           # 2. Dockerfile im .devcontainer patchen (latest -> next)
@@ -46,5 +46,6 @@ jobs:
             echo "Keine Änderungen."
           else
             git commit -m "chore: sync upstream and force n8n:next"
-            git push origin main
+            # HIER WAR DER FEHLER: Push zu master, nicht main
+            git push origin master
           fi
