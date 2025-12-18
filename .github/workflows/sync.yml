@@ -1,4 +1,4 @@
-name: Auto Sync n8n-advanced with Upstream
+name: Auto Sync n8n-advanced-ns with Upstream
 on:
   schedule:
     - cron: '0 * * * *'
@@ -23,19 +23,35 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           
-      - name: Sync with latest RELEASE (not master)
+      - name: Sync with n8n-advanced and n8n Pre-Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Use gh CLI (better stability/auth than curl) to avoid rate limits
-          LATEST_RELEASE=$(gh release view --repo n8n-io/n8n --json tagName --jq .tagName)
-          echo "Syncing with release: $LATEST_RELEASE"
+          # 1. Sync from n8n-advanced (Base Source)
+          echo "Fetching stardawnai/n8n-advanced..."
+          git remote add n8n-advanced https://github.com/stardawnai/n8n-advanced.git || true
+          git fetch n8n-advanced --force
+
+          # Merge n8n-advanced/master
+          echo "Merging n8n-advanced..."
+          # We allow unrelated histories because we are stitching repos together
+          if ! git merge n8n-advanced/master --allow-unrelated-histories -X ours; then
+            echo "Merge conflict with n8n-advanced. Attempting auto-resolution (ours)..."
+            # If standard merge fails, we rely on -X ours. If that failed, we have a problem.
+            # But usually -X ours succeeds by taking our version.
+            git commit -m "Merge n8n-advanced (Auto Conflict Resolution)" || true
+          fi
+
+          # 2. Sync from n8n-io/n8n (Pre-Release)
+          # Get the latest version including pre-releases
+          LATEST_PRE=$(gh release list --repo n8n-io/n8n --limit 1 --exclude-drafts --exclude-pre-releases=false --json tagName --jq '.[0].tagName')
+          echo "Syncing with n8n version: $LATEST_PRE"
           
           git remote add upstream https://github.com/n8n-io/n8n.git || true
           git fetch upstream --tags --force
           
-          # Try merge with -X ours. If it fails, resolve manually in loop.
-          if ! git merge "$LATEST_RELEASE" --allow-unrelated-histories -X ours; then
+          # Merge the n8n version
+          if ! git merge "$LATEST_PRE" --allow-unrelated-histories -X ours; then
             echo "Merge conflict detected. Starting manual resolution..."
             CONFLICTS=$(git diff --name-only --diff-filter=U)
             
@@ -57,36 +73,52 @@ jobs:
               exit 1
             fi
             
-            git commit -m "Merge release $LATEST_RELEASE (Automatic Conflict Resolution)"
+            git commit -m "Merge release $LATEST_PRE (Automatic Conflict Resolution)"
           fi
           
-          # --- WORKFLOW CLEANUP ---
-          echo "Cleaning up upstream workflows..."
+          # 3. Patch Dockerfile to use the specific version
+          # Strip 'n8n@' prefix for Docker image tag (e.g., n8n@1.2.3 -> 1.2.3)
+          DOCKER_TAG=${LATEST_PRE#n8n@}
           
-          # 1. Delete ALL workflows in the folder (removes n8n junk + our files temporarily)
+          echo "Updating .devcontainer/Dockerfile to use $DOCKER_TAG..."
+          if [ -f .devcontainer/Dockerfile ]; then
+             # Replace any n8nio/n8n tag with the new one
+             sed -i "s|FROM n8nio/n8n:[^ ]*|FROM n8nio/n8n:$DOCKER_TAG|g" .devcontainer/Dockerfile
+             git add .devcontainer/Dockerfile
+             # Only commit if there are changes
+             if ! git diff --cached --quiet; then
+                git commit -m "Update Dockerfile to use n8n version $DOCKER_TAG"
+             fi
+          fi
+
+          # 4. Restore Protected Files (README & Workflows)
+          echo "Restoring protected files..."
+          
+          # Clean up upstream workflows (delete all, then restore ours)
           git rm -r --ignore-unmatch .github/workflows/
-          
-          # 2. Restore YOUR workflows from the original commit (before the merge happened)
-          # This ensures we get back sync.yml but NOT the upstream 'Test Master' files.
           git checkout ${{ github.sha }} -- .github/workflows/
           
-          git add .github/workflows/
+          # Restore README.md from our original state (to prevent overwrite)
+          git checkout ${{ github.sha }} -- README.md
+
+          git add .github/workflows/ README.md
           if ! git diff --cached --quiet; then
-            git commit -m "Restore custom workflows from original state"
+            git commit -m "Restore custom workflows and README from original state"
           fi
-          # ------------------------
           
+          # Push changes
           git remote set-url origin https://${{ secrets.GH_PAT }}@github.com/${{ github.repository }}.git
           git push origin master
           
       - name: Create our Release
         run: |
-          LATEST_RELEASE=$(gh release view --repo n8n-io/n8n --json tagName --jq .tagName)
-          gh release delete "$LATEST_RELEASE" --repo "$GITHUB_REPOSITORY" -y 2>/dev/null || true
-          gh release create "$LATEST_RELEASE" \
+          LATEST_PRE=$(gh release list --repo n8n-io/n8n --limit 1 --exclude-drafts --exclude-pre-releases=false --json tagName --jq '.[0].tagName')
+          gh release delete "$LATEST_PRE" --repo "$GITHUB_REPOSITORY" -y 2>/dev/null || true
+          gh release create "$LATEST_PRE" \
             --repo "$GITHUB_REPOSITORY" \
-            --title "n8n-advanced Release $LATEST_RELEASE" \
-            --notes "RELEASE OF $LATEST_RELEASE with custom enhancements" \
+            --title "n8n-advanced-ns Release $LATEST_PRE" \
+            --notes "NS Release based on $LATEST_PRE and n8n-advanced" \
+            --prerelease \
             --latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
