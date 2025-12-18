@@ -1,6 +1,6 @@
-# n8n-advanced
+# N8N-ADVANCED-NS🚀🏆
 
-Enhanced n8n with persistent Python packages, PostgreSQL database, and intelligent update system for professional workflow automation.
+Enhanced n8n (USING THE NON-STABLE PRE-RELEASE VERSION) with persistent Python packages, PostgreSQL database, and intelligent update system for professional workflow automation.
 
 ## Quick Start
 
