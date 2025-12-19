@@ -40,7 +40,7 @@ jobs:
 
       - name: Restore README & Patch Dockerfile
         run: |
-          # 1. Restore YOUR Readme (Ignore upstream)
+          # 1. Restore YOUR Readme (Ignore upstream changes to README)
           git checkout HEAD -- README.md
 
           # 2. Patch Dockerfile in .devcontainer (force latest -> next)
@@ -63,3 +63,24 @@ jobs:
               sleep 15
             done
           fi
+
+      - name: Create Release
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Generate a time-based tag name (CalVer)
+          TAG_NAME="v$(date +'%Y.%m.%d-%H%M')"
+          
+          echo "Creating tag: $TAG_NAME"
+          
+          # Create tag and push it
+          git tag $TAG_NAME
+          git push origin $TAG_NAME
+
+          # Create GitHub Release via CLI
+          gh release create "$TAG_NAME" \
+            --title "Sync Release $TAG_NAME" \
+            --notes "Automated sync from upstream. Based on n8n:next." \
+            --target master \
+            --latest
