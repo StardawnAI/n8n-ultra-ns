@@ -45,7 +45,12 @@ jobs:
             echo "No changes to commit."
           else
             git commit -m "chore: sync upstream and force n8n:next"
-            git push origin master
+            # Retry push loop
+            for i in {1..5}; do
+              git push origin master && break
+              echo "Push failed. Retrying..."
+              sleep 10
+            done
           fi
 
       - name: Create Release (Fetch Official Pre-Release Tag)
@@ -58,8 +63,9 @@ jobs:
           # 1. Add the OFFICIAL n8n repo as a remote (just to read tags)
           git remote add official https://github.com/n8n-io/n8n.git
           
-          # 2. Fetch tags from official source
-          git fetch official --tags
+          # 2. Fetch tags from official source FORCEFULLY
+          # The --force flag fixes the "would clobber existing tag" error you saw in the logs
+          git fetch official --tags --force
           
           # 3. Find the absolute latest tag containing "-exp" (Pre-release)
           # We sort by version (-V) and take the last one.
