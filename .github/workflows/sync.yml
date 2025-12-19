@@ -30,10 +30,8 @@ jobs:
           # 1. Fetch code
           git fetch upstream
           
-          # 2. Merge MASTER (Correct branch name)
-          # Removed '|| true' -> If this fails, the workflow STOPS immediately.
-          # This guarantees you only get a release if code was actually synced/checked.
-          git merge upstream/master --no-edit --allow-unrelated-histories
+          # 2. Merge MASTER 
+          git merge upstream/master --no-edit --allow-unrelated-histories -X ours
 
       - name: Restore README & Patch Dockerfile
         run: |
@@ -68,7 +66,6 @@ jobs:
           git fetch official --tags --force
           
           # 2. Find the HIGHEST version number (SemVer sorting)
-          # Takes ALL tags, sorts by Version, picks the highest.
           TARGET_TAG=$(git tag --list 'n8n@*' | sort -V | tail -n 1)
 
           if [ -z "$TARGET_TAG" ]; then
