@@ -40,7 +40,7 @@ jobs:
 
       - name: Restore README & Patch Dockerfile
         run: |
-          # 1. Restore YOUR Readme (Ignore upstream changes to README)
+          # 1. Restore YOUR Readme
           git checkout HEAD -- README.md
 
           # 2. Patch Dockerfile in .devcontainer (force latest -> next)
@@ -64,37 +64,40 @@ jobs:
             done
           fi
 
-      - name: Create Release
+      - name: Create Release from Docker Version
         if: success()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 1. Extract the REAL version from package.json (e.g., 2.0.3-exp.0)
-          PACKAGE_VERSION=$(jq -r .version package.json)
+          echo "Pulling n8n:next to determine the REAL version..."
+          docker pull n8nio/n8n:next
           
-          # 2. Format the tag exactly like official n8n (e.g., n8n@2.0.3-exp.0)
-          TAG_NAME="n8n@${PACKAGE_VERSION}"
+          # Run n8n inside docker to get the exact version string (e.g. 2.0.3-exp.0)
+          REAL_VERSION=$(docker run --rm --entrypoint n8n n8nio/n8n:next --version)
           
-          echo "Detected version in package.json: $PACKAGE_VERSION"
-          echo "Target Tag Name: $TAG_NAME"
+          # Clean up output (remove newlines)
+          REAL_VERSION=$(echo "$REAL_VERSION" | tr -d '\r\n')
+          
+          TAG_NAME="n8n@${REAL_VERSION}"
+          
+          echo "Detected Docker Version: $REAL_VERSION"
+          echo "Target Tag: $TAG_NAME"
+          
+          # --- Force Update Tag ---
+          git tag -f "$TAG_NAME"
+          git push -f origin "$TAG_NAME"
 
-          # 3. Check if this tag already exists on YOUR remote (origin)
-          # Note: We only skip if the RELEASE already exists, not just the tag.
-          # But for simplicity, if tag exists on origin, we assume it's done unless we force update.
+          # --- Manage GitHub Release ---
+          # 1. Delete old release if it exists to avoid 422 errors
+          echo "Deleting existing release (if any)..."
+          gh release delete "$TAG_NAME" --yes --repo ${{ github.repository }} || true
           
-          # 4. Force create tag (overwrite local upstream tag if exists) and push
-          # The -f flag fixes the "fatal: tag already exists" error you saw
-          git tag -f $TAG_NAME
-          git push -f origin $TAG_NAME
-
-          # 5. Create GitHub Release via CLI
-          # If release exists, this might fail, so we can use '|| true' or check before.
-          # But usually, if tag changed, we want a new release.
+          # 2. Create the new release
+          echo "Creating new release..."
           gh release create "$TAG_NAME" \
             --repo ${{ github.repository }} \
             --title "$TAG_NAME" \
-            --notes "Automated sync. Version: $PACKAGE_VERSION (derived from package.json)" \
+            --notes "Automated sync. Based on n8n:next version: $REAL_VERSION" \
             --target master \
             --prerelease \
-            --latest \
-            || echo "Release might already exist. Check GitHub."
+            --latest
