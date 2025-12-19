@@ -69,21 +69,32 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Generate a time-based tag name (CalVer)
-          TAG_NAME="v$(date +'%Y.%m.%d-%H%M')"
+          # 1. Extract the REAL version from package.json (e.g., 2.0.3-exp.0)
+          # We use 'jq' to read the json file safely
+          PACKAGE_VERSION=$(jq -r .version package.json)
           
-          echo "Creating tag: $TAG_NAME"
+          # 2. Format the tag exactly like official n8n (e.g., n8n@2.0.3-exp.0)
+          TAG_NAME="n8n@${PACKAGE_VERSION}"
           
-          # Create tag and push it
+          echo "Detected version in package.json: $PACKAGE_VERSION"
+          echo "Target Tag Name: $TAG_NAME"
+
+          # 3. Check if this tag already exists on remote to avoid errors
+          if git ls-remote --exit-code --tags origin "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Tag $TAG_NAME already exists. Skipping release creation."
+            exit 0
+          fi
+          
+          # 4. Create tag and push it
           git tag $TAG_NAME
           git push origin $TAG_NAME
 
-          # Create GitHub Release via CLI
-          # CRITICAL FIX: Explicitly set the target repo to YOUR repo
-          # This prevents 'gh' from trying to publish to the upstream remote
+          # 5. Create GitHub Release via CLI
+          # Explicitly set the target repo to the repo name
           gh release create "$TAG_NAME" \
             --repo ${{ github.repository }} \
-            --title "Sync Release $TAG_NAME" \
-            --notes "Automated sync from upstream. Based on n8n:next." \
+            --title "$TAG_NAME" \
+            --notes "Automated sync. Version: $PACKAGE_VERSION (derived from package.json)" \
             --target master \
+            --prerelease \
             --latest
