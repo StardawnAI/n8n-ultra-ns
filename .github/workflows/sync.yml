@@ -79,7 +79,10 @@ jobs:
           git push origin $TAG_NAME
 
           # Create GitHub Release via CLI
+          # CRITICAL FIX: Explicitly set the target repo to YOUR repo
+          # This prevents 'gh' from trying to publish to the upstream remote
           gh release create "$TAG_NAME" \
+            --repo ${{ github.repository }} \
             --title "Sync Release $TAG_NAME" \
             --notes "Automated sync from upstream. Based on n8n:next." \
             --target master \
