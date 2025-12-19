@@ -1,4 +1,4 @@
-name: Sync n8n-advanced (Latest Force)
+name: Sync n8n-advanced (Master & Highest Version)
 
 on:
   schedule:
@@ -27,14 +27,18 @@ jobs:
         run: |
           git remote add upstream https://github.com/StardawnAI/n8n-advanced.git
           
-          # Standard sync of code
+          # 1. Fetch code
           git fetch upstream
-          git merge upstream/main --no-edit --allow-unrelated-histories || true
+          
+          # 2. Merge MASTER (Correct branch name)
+          # Removed '|| true' -> If this fails, the workflow STOPS immediately.
+          # This guarantees you only get a release if code was actually synced/checked.
+          git merge upstream/master --no-edit --allow-unrelated-histories
 
       - name: Restore README & Patch Dockerfile
         run: |
           git checkout HEAD -- README.md
-          # Force Dockerfile to use the bleeding edge image
+          # Force n8n:next in Dockerfile
           sed -i 's|n8nio/n8n:latest|n8nio/n8n:next|g' .devcontainer/Dockerfile
 
       - name: Push Changes
@@ -45,48 +49,46 @@ jobs:
             echo "No changes to commit."
           else
             git commit -m "chore: sync upstream and force n8n:next"
+            # Retry loop for push
             for i in {1..5}; do
               git push origin master && break
               sleep 10
             done
           fi
 
-      - name: Create Release (Force Latest)
+      - name: Create Release (Highest Version Number)
         if: success()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Fetching tags from OFFICIAL n8n repo to find the absolute latest..."
+          echo "Fetching official tags to find the HIGHEST version number..."
           
-          # 1. Add official n8n remote
+          # 1. Fetch tags from official repo
           git remote add official https://github.com/n8n-io/n8n.git
-          
-          # 2. Fetch tags FORCEFULLY (to overwrite any local conflicts)
           git fetch official --tags --force
           
-          # 3. Find the ABSOLUTE LATEST tag (regardless if stable or exp)
-          # We filter for 'n8n@*' tags, sort by Version (-V), and take the last one.
+          # 2. Find the HIGHEST version number (SemVer sorting)
+          # Takes ALL tags, sorts by Version, picks the highest.
           TARGET_TAG=$(git tag --list 'n8n@*' | sort -V | tail -n 1)
 
           if [ -z "$TARGET_TAG" ]; then
-            echo "::error::Could not find any n8n tags."
+            echo "::error::No tags found."
             exit 1
           fi
 
-          echo "Selected Version as Latest: $TARGET_TAG"
+          echo "Selected Highest Version: $TARGET_TAG"
 
-          # 4. Force this tag onto YOUR repo
+          # 3. Force update tag on your repo
           git tag -f "$TARGET_TAG"
           git push -f origin "$TARGET_TAG"
 
-          # 5. Clean up old release if exists
+          # 4. Clean old release
           gh release delete "$TARGET_TAG" --yes --repo ${{ github.repository }} || true
           
-          # 6. Create Release forced as "LATEST" (Green Badge)
-          # We purposefully REMOVED the --prerelease flag.
+          # 5. Create Release as LATEST
           gh release create "$TARGET_TAG" \
             --repo ${{ github.repository }} \
             --title "$TARGET_TAG" \
-            --notes "Automated sync. This is the absolute latest version from n8n (mapped to Latest Release). Version: $TARGET_TAG" \
+            --notes "Automated sync. Highest version number found: $TARGET_TAG" \
             --target master \
             --latest
