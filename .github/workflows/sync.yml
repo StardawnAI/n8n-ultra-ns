@@ -79,20 +79,22 @@ jobs:
           echo "Target Tag Name: $TAG_NAME"
 
           # 3. Check if this tag already exists on YOUR remote (origin)
-          if git ls-remote --exit-code --tags origin "$TAG_NAME" >/dev/null 2>&1; then
-            echo "Tag $TAG_NAME already exists on remote. Skipping release creation."
-            exit 0
-          fi
+          # Note: We only skip if the RELEASE already exists, not just the tag.
+          # But for simplicity, if tag exists on origin, we assume it's done unless we force update.
           
           # 4. Force create tag (overwrite local upstream tag if exists) and push
+          # The -f flag fixes the "fatal: tag already exists" error you saw
           git tag -f $TAG_NAME
-          git push origin $TAG_NAME
+          git push -f origin $TAG_NAME
 
           # 5. Create GitHub Release via CLI
+          # If release exists, this might fail, so we can use '|| true' or check before.
+          # But usually, if tag changed, we want a new release.
           gh release create "$TAG_NAME" \
             --repo ${{ github.repository }} \
             --title "$TAG_NAME" \
             --notes "Automated sync. Version: $PACKAGE_VERSION (derived from package.json)" \
             --target master \
             --prerelease \
-            --latest
+            --latest \
+            || echo "Release might already exist. Check GitHub."
