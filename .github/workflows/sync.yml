@@ -75,11 +75,17 @@ jobs:
 
           echo "Selected Highest Version: $TARGET_TAG"
 
-          # --- NEW CHECK: Stop if release already exists ---
-          if gh release view "$TARGET_TAG" --repo ${{ github.repository }} > /dev/null 2>&1; then
-            echo "Release $TARGET_TAG already exists. Skipping release creation."
+          # --- CHECK IF REBUILD NEEDED ---
+          RELEASE_COMMIT=$(git rev-list -n 1 "$TARGET_TAG" 2>/dev/null || echo "none")
+          CURRENT_COMMIT=$(git rev-parse HEAD)
+          
+          if [ "$RELEASE_COMMIT" = "$CURRENT_COMMIT" ]; then
+            echo "Release $TARGET_TAG already points to current code. Nothing to do."
             exit 0
           fi
+          
+          # Delete old release if it exists (allows rebuild with new code)
+          gh release delete "$TARGET_TAG" --repo ${{ github.repository }} --cleanup-tag -y 2>/dev/null || true
           # -------------------------------------------------
 
           # 3. Force update tag on repo
