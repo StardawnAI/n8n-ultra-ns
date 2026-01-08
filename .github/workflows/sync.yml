@@ -76,19 +76,22 @@ jobs:
           git remote add stardawn https://github.com/StardawnAI/n8n-advanced.git || true
           git fetch stardawn master
           
-          # Copy the inject script and version file
+          # Copy the inject script, version file, and custom nodes config
           git checkout stardawn/master -- .github/scripts/inject-custom-nodes.sh || true
           git checkout stardawn/master -- STARDAWN_VERSION || true
+          git checkout stardawn/master -- CUSTOM_NODES.txt || true
           
-          # Copy all custom node folders that exist in n8n-advanced but not in n8n-io
-          # The inject script will handle the rest
-          git checkout stardawn/master -- packages/nodes-base/nodes/Remberg/ || true
-          git checkout stardawn/master -- packages/nodes-base/nodes/WhatsappPrivate/ || true  
-          git checkout stardawn/master -- packages/nodes-base/credentials/RembergApi.credentials.ts || true
-          git checkout stardawn/master -- packages/nodes-base/credentials/WhatsappPrivateApi.credentials.ts || true
+          # Dynamically copy all custom nodes listed in CUSTOM_NODES.txt
+          if [ -f CUSTOM_NODES.txt ]; then
+            while IFS= read -r path || [ -n "$path" ]; do
+              # Skip empty lines and comments
+              [[ -z "$path" || "$path" == \#* ]] && continue
+              echo "Fetching: $path"
+              git checkout stardawn/master -- "$path" 2>/dev/null || echo "  (not found, skipping)"
+            done < CUSTOM_NODES.txt
+          fi
           
-          # Future custom nodes will be automatically picked up by the inject script
-          # as long as they are added to inject-custom-nodes.sh in n8n-advanced
+          echo "Custom nodes fetch complete."
 
       - name: Inject Custom Nodes
         run: |
