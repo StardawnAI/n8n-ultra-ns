@@ -24,25 +24,61 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
-      - name: Get Highest n8n Version
-        id: n8n_version
+      - name: Check if rebuild needed
+        id: check
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Get the HIGHEST version number from ALL releases (stable + pre-releases)
-          # Sort by version number and take the highest
           git remote add n8n-official https://github.com/n8n-io/n8n.git || true
           git fetch n8n-official --tags --force
           
-          # Get highest version tag
           HIGHEST_VERSION=$(git tag --list 'n8n@*' | sort -V | tail -n 1)
-          
-          echo "Selected highest version: $HIGHEST_VERSION"
           echo "version=$HIGHEST_VERSION" >> $GITHUB_OUTPUT
+          
+          # Get OUR current release tag name
+          OUR_LATEST_TAG=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
+          
+          echo "n8n's highest version: $HIGHEST_VERSION"
+          echo "Our latest release: $OUR_LATEST_TAG"
+          
+          # Compare tag names
+          if [ "$HIGHEST_VERSION" != "$OUR_LATEST_TAG" ]; then
+            echo "n8n has a different version ($HIGHEST_VERSION). Proceeding..."
+            echo "skip_sync=false" >> $GITHUB_OUTPUT
+          else
+            # Same version - check if we pushed new code
+            TAG_INFO=$(gh api repos/$GITHUB_REPOSITORY/git/refs/tags/$OUR_LATEST_TAG 2>/dev/null || echo "")
+            if [ -n "$TAG_INFO" ]; then
+              TAG_TYPE=$(echo "$TAG_INFO" | jq -r '.object.type')
+              if [ "$TAG_TYPE" = "tag" ]; then
+                TAG_SHA=$(echo "$TAG_INFO" | jq -r '.object.sha')
+                RELEASE_COMMIT=$(gh api repos/$GITHUB_REPOSITORY/git/tags/$TAG_SHA --jq '.object.sha' 2>/dev/null || echo "none")
+              else
+                RELEASE_COMMIT=$(echo "$TAG_INFO" | jq -r '.object.sha')
+              fi
+            else
+              RELEASE_COMMIT="none"
+            fi
+            
+            CURRENT_HEAD=$(git rev-parse HEAD)
+            
+            echo "Our release commit: $RELEASE_COMMIT"
+            echo "Current HEAD: $CURRENT_HEAD"
+            
+            if [ "$RELEASE_COMMIT" = "$CURRENT_HEAD" ]; then
+              echo "=== NOTHING IS NEW. Skipping all remaining steps. ==="
+              echo "skip_sync=true" >> $GITHUB_OUTPUT
+            else
+              echo "We pushed new code since last release. Rebuilding..."
+              echo "skip_sync=false" >> $GITHUB_OUTPUT
+            fi
+          fi
 
       - name: Sync from n8n-io/n8n
+        if: steps.check.outputs.skip_sync != 'true'
         run: |
-          N8N_VERSION="${{ steps.n8n_version.outputs.version }}"
+          N8N_VERSION="${{ steps.check.outputs.version }}"
           
           git remote add n8n-official https://github.com/n8n-io/n8n.git || true
           git fetch n8n-official --tags --force
@@ -51,6 +87,7 @@ jobs:
           git merge "$N8N_VERSION" --no-edit --allow-unrelated-histories -X ours || true
 
       - name: Clean up n8n-io Workflows
+        if: steps.check.outputs.skip_sync != 'true'
         run: |
           echo "Removing n8n-io workflows we don't need..."
           
@@ -71,6 +108,7 @@ jobs:
           echo "Cleanup complete."
 
       - name: Fetch Custom Nodes from n8n-advanced
+        if: steps.check.outputs.skip_sync != 'true'
         run: |
           # Add n8n-advanced remote
           git remote add stardawn https://github.com/StardawnAI/n8n-advanced.git || true
@@ -94,11 +132,13 @@ jobs:
           echo "Custom nodes fetch complete."
 
       - name: Inject Custom Nodes
+        if: steps.check.outputs.skip_sync != 'true'
         run: |
           chmod +x .github/scripts/inject-custom-nodes.sh || true
           bash .github/scripts/inject-custom-nodes.sh || true
 
       - name: Commit and Push
+        if: steps.check.outputs.skip_sync != 'true'
         run: |
           git add -A
           
@@ -113,54 +153,11 @@ jobs:
           fi
 
       - name: Create Release
-        if: success()
+        if: steps.check.outputs.skip_sync != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          N8N_VERSION="${{ steps.n8n_version.outputs.version }}"
-          
-          # --- CHECK IF REBUILD NEEDED ---
-          # Rule 1: If n8n's highest version is different from our release → Rebuild
-          # Rule 2: If same version but we pushed new code → Rebuild
-          # Rule 3: If nothing is new → EXIT 0 (do nothing)
-          
-          # STEP 1: Get OUR current release tag name
-          OUR_LATEST_TAG=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
-          
-          echo "n8n's highest version: $N8N_VERSION"
-          echo "Our latest release: $OUR_LATEST_TAG"
-          
-          # STEP 2: Compare tag names
-          if [ "$N8N_VERSION" != "$OUR_LATEST_TAG" ]; then
-            echo "n8n has a different version ($N8N_VERSION). Proceeding..."
-          else
-            # Same version - check if we pushed new code
-            TAG_INFO=$(gh api repos/$GITHUB_REPOSITORY/git/refs/tags/$OUR_LATEST_TAG 2>/dev/null || echo "")
-            if [ -n "$TAG_INFO" ]; then
-              TAG_TYPE=$(echo "$TAG_INFO" | jq -r '.object.type')
-              if [ "$TAG_TYPE" = "tag" ]; then
-                TAG_SHA=$(echo "$TAG_INFO" | jq -r '.object.sha')
-                RELEASE_COMMIT=$(gh api repos/$GITHUB_REPOSITORY/git/tags/$TAG_SHA --jq '.object.sha' 2>/dev/null || echo "none")
-              else
-                RELEASE_COMMIT=$(echo "$TAG_INFO" | jq -r '.object.sha')
-              fi
-            else
-              RELEASE_COMMIT="none"
-            fi
-            
-            CURRENT_HEAD=$(git rev-parse HEAD)
-            
-            echo "Our release commit: $RELEASE_COMMIT"
-            echo "Current HEAD: $CURRENT_HEAD"
-            
-            if [ "$RELEASE_COMMIT" = "$CURRENT_HEAD" ]; then
-              echo "=== NOTHING IS NEW. Exiting without changes. ==="
-              exit 0
-            else
-              echo "We pushed new code since last release. Rebuilding..."
-            fi
-          fi
-          # ------------------------------
+          N8N_VERSION="${{ steps.check.outputs.version }}"
           
           # Delete old release if exists
           gh release delete "$N8N_VERSION" --repo "$GITHUB_REPOSITORY" --cleanup-tag -y 2>/dev/null || true
