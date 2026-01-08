@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      workflows: write
+      packages: write
 
     steps:
       - name: Checkout
@@ -59,13 +59,19 @@ jobs:
           git remote add stardawn https://github.com/StardawnAI/n8n-advanced.git || true
           git fetch stardawn master
           
-          # Copy only the custom nodes and related files
-          git checkout stardawn/master -- packages/nodes-base/nodes/Remberg/ || true
-          git checkout stardawn/master -- packages/nodes-base/nodes/WhatsappPrivate/ || true
-          git checkout stardawn/master -- packages/nodes-base/credentials/RembergApi.credentials.ts || true
-          git checkout stardawn/master -- packages/nodes-base/credentials/WhatsappPrivateApi.credentials.ts || true
+          # Copy the inject script and version file
           git checkout stardawn/master -- .github/scripts/inject-custom-nodes.sh || true
           git checkout stardawn/master -- STARDAWN_VERSION || true
+          
+          # Copy all custom node folders that exist in n8n-advanced but not in n8n-io
+          # The inject script will handle the rest
+          git checkout stardawn/master -- packages/nodes-base/nodes/Remberg/ || true
+          git checkout stardawn/master -- packages/nodes-base/nodes/WhatsappPrivate/ || true  
+          git checkout stardawn/master -- packages/nodes-base/credentials/RembergApi.credentials.ts || true
+          git checkout stardawn/master -- packages/nodes-base/credentials/WhatsappPrivateApi.credentials.ts || true
+          
+          # Future custom nodes will be automatically picked up by the inject script
+          # as long as they are added to inject-custom-nodes.sh in n8n-advanced
 
       - name: Inject Custom Nodes
         run: |

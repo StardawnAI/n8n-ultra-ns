@@ -1,11 +1,6 @@
-*.sh text eol=lf
-.devcontainer/** merge=ours
-workflows/** merge=ours
-.github/** merge=ours
-workflows-static/** merge=ours
-initial-credentials/** merge=ours
-updates/** merge=ours
-docker-compose.yml merge=ours
-requirements.txt merge=ours
+# Protect our files from being overwritten during sync
 README.md merge=ours
-TODO.md merge=ours
+STARDAWN_VERSION merge=ours
+.github/workflows/sync.yml merge=ours
+.github/workflows/docker-publish.yml merge=ours
+.gitattributes merge=ours
