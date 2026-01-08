@@ -125,10 +125,14 @@ jobs:
           if [ -z "$OUR_RELEASE" ]; then
             echo "New n8n version detected: $N8N_VERSION"
           else
-            OUR_TAG_COMMIT=$(git for-each-ref --format='%(objectname)' "refs/tags/$N8N_VERSION" 2>/dev/null || echo "none")
+            # Get the commit SHA from GitHub API (not local)
+            RELEASE_COMMIT=$(gh api repos/$GITHUB_REPOSITORY/git/refs/tags/$N8N_VERSION --jq '.object.sha' 2>/dev/null || echo "none")
             CURRENT_HEAD=$(git rev-parse HEAD)
             
-            if [ "$OUR_TAG_COMMIT" = "$CURRENT_HEAD" ]; then
+            echo "Release commit: $RELEASE_COMMIT"
+            echo "Current HEAD: $CURRENT_HEAD"
+            
+            if [ "$RELEASE_COMMIT" = "$CURRENT_HEAD" ]; then
               echo "Release $N8N_VERSION exists and matches current code. Nothing to do."
               exit 0
             else
