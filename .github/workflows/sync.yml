@@ -24,24 +24,21 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
-      - name: Get n8n Pre-Release Version
+      - name: Get Highest n8n Version
         id: n8n_version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Get latest pre-release OR the highest version (includes RCs)
-          PRERELEASE=$(gh release list --repo n8n-io/n8n --limit 10 --json tagName,isPrerelease --jq '.[] | select(.isPrerelease) | .tagName' | head -n 1)
+          # Get the HIGHEST version number from ALL releases (stable + pre-releases)
+          # Sort by version number and take the highest
+          git remote add n8n-official https://github.com/n8n-io/n8n.git || true
+          git fetch n8n-official --tags --force
           
-          if [ -z "$PRERELEASE" ]; then
-            # No pre-release found, use highest version
-            echo "No pre-release found, using highest version..."
-            git remote add n8n-official https://github.com/n8n-io/n8n.git || true
-            git fetch n8n-official --tags --force
-            PRERELEASE=$(git tag --list 'n8n@*' | sort -V | tail -n 1)
-          fi
+          # Get highest version tag
+          HIGHEST_VERSION=$(git tag --list 'n8n@*' | sort -V | tail -n 1)
           
-          echo "Selected version: $PRERELEASE"
-          echo "version=$PRERELEASE" >> $GITHUB_OUTPUT
+          echo "Selected highest version: $HIGHEST_VERSION"
+          echo "version=$HIGHEST_VERSION" >> $GITHUB_OUTPUT
 
       - name: Sync from n8n-io/n8n
         run: |
@@ -50,8 +47,28 @@ jobs:
           git remote add n8n-official https://github.com/n8n-io/n8n.git || true
           git fetch n8n-official --tags --force
           
-          # Merge the pre-release tag
+          # Merge the version tag
           git merge "$N8N_VERSION" --no-edit --allow-unrelated-histories -X ours || true
+
+      - name: Clean up n8n-io Workflows
+        run: |
+          echo "Removing n8n-io workflows we don't need..."
+          
+          # Save our workflows temporarily
+          mkdir -p /tmp/our-workflows
+          cp .github/workflows/sync.yml /tmp/our-workflows/ 2>/dev/null || true
+          cp .github/workflows/docker-publish.yml /tmp/our-workflows/ 2>/dev/null || true
+          
+          # Delete all workflows
+          rm -rf .github/workflows/*
+          
+          # Restore only our workflows
+          cp /tmp/our-workflows/* .github/workflows/ 2>/dev/null || true
+          
+          # Delete n8n-io actions we don't need (keep only scripts folder)
+          find .github/actions -mindepth 1 -maxdepth 1 -type d ! -name 'scripts' -exec rm -rf {} \; 2>/dev/null || true
+          
+          echo "Cleanup complete."
 
       - name: Fetch Custom Nodes from n8n-advanced
         run: |
@@ -128,13 +145,12 @@ jobs:
           COMMIT_TITLE=$(git log -1 --pretty=%s)
           COMMIT_BODY=$(git log -1 --pretty=%b)
           
-          RELEASE_TITLE="n8n-advanced-ns $N8N_VERSION stardawn@$STARDAWN_VERSION (pre-release)"
-          RELEASE_NOTES=$(printf "## n8n-advanced-ns %s stardawn@%s\n\n**n8n Version:** %s (pre-release/next)\n**Stardawn Version:** %s\n**Custom Nodes:** Remberg, WhatsApp Private\n\n---\n\n### Latest Changes\n%s\n\n%s" "$N8N_VERSION" "$STARDAWN_VERSION" "$N8N_VERSION" "$STARDAWN_VERSION" "$COMMIT_TITLE" "$COMMIT_BODY")
+          RELEASE_TITLE="n8n-advanced-ns $N8N_VERSION stardawn@$STARDAWN_VERSION"
+          RELEASE_NOTES=$(printf "## n8n-advanced-ns %s stardawn@%s\n\n**n8n Version:** %s (next build)\n**Stardawn Version:** %s\n**Custom Nodes:** Remberg, WhatsApp Private\n\n---\n\n### Latest Changes\n%s\n\n%s" "$N8N_VERSION" "$STARDAWN_VERSION" "$N8N_VERSION" "$STARDAWN_VERSION" "$COMMIT_TITLE" "$COMMIT_BODY")
           
           gh release create "$N8N_VERSION" \
             --repo "$GITHUB_REPOSITORY" \
             --title "$RELEASE_TITLE" \
             --notes "$RELEASE_NOTES" \
             --target master \
-            --prerelease \
             --latest
