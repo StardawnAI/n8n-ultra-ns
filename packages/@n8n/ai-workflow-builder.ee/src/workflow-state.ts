@@ -2,7 +2,8 @@ import type { BaseMessage } from '@langchain/core/messages';
 import { HumanMessage } from '@langchain/core/messages';
 import { Annotation, messagesStateReducer } from '@langchain/langgraph';
 
-import type { NodeConfigurationsMap, SimpleWorkflow, WorkflowOperation } from './types';
+import type { SimpleWorkflow, WorkflowMetadata, WorkflowOperation } from './types';
+import { appendArrayReducer, cachedTemplatesReducer } from './utils/state-reducers';
 import type { ProgrammaticEvaluationResult, TelemetryValidationStatus } from './validation/types';
 import type { ChatPayload } from './workflow-builder-agent';
 
@@ -102,29 +103,16 @@ export const WorkflowState = Annotation.Root({
 		default: () => 'EMPTY',
 	}),
 
-	// Node configurations collected from workflow examples
-	// Used to provide context when updating node parameters
-	nodeConfigurations: Annotation<NodeConfigurationsMap>({
-		reducer: (current, update) => {
-			if (!update || Object.keys(update).length === 0) {
-				return current;
-			}
-			// Merge configurations by node type, appending new configs to existing ones
-			const merged = { ...current };
-			for (const [nodeType, configs] of Object.entries(update)) {
-				if (!merged[nodeType]) {
-					merged[nodeType] = [];
-				}
-				merged[nodeType] = [...merged[nodeType], ...configs];
-			}
-			return merged;
-		},
-		default: () => ({}),
-	}),
-
 	// Template IDs fetched from workflow examples for telemetry
 	templateIds: Annotation<number[]>({
-		reducer: (current, update) => (update && update.length > 0 ? [...current, ...update] : current),
+		reducer: appendArrayReducer,
+		default: () => [],
+	}),
+
+	// Cached workflow templates from template API
+	// Shared across tools to reduce API calls
+	cachedTemplates: Annotation<WorkflowMetadata[]>({
+		reducer: cachedTemplatesReducer,
 		default: () => [],
 	}),
 });

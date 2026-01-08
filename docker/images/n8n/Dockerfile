@@ -1,4 +1,4 @@
-ARG NODE_VERSION=22.21.0
+ARG NODE_VERSION=22.21.1
 ARG N8N_VERSION=snapshot
 
 # ==============================================================================
@@ -31,8 +31,6 @@ RUN cd /usr/local/lib/node_modules/n8n && \
 		ln -s /usr/local/lib/node_modules/n8n/bin/n8n /usr/local/bin/n8n && \
     mkdir -p /home/node/.n8n && \
     chown -R node:node /home/node
-
-RUN cd /usr/local/lib/node_modules/n8n/node_modules/pdfjs-dist && npm install @napi-rs/canvas
 
 EXPOSE 5678/tcp
 USER node

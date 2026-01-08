@@ -88,6 +88,7 @@ export interface ICredentialsDb extends ICredentialsBase, ICredentialsEncrypted 
 	name: string;
 	shared?: SharedCredentials[];
 	isGlobal?: boolean;
+	isResolvable?: boolean;
 }
 
 export interface IExecutionResponse extends IExecutionBase {
@@ -384,6 +385,8 @@ export type APIRequest<
 
 export type AuthenticationInformation = {
 	usedMfa: boolean;
+	// Indicates the user is logged in but hasn't completed required MFA enrollment
+	mfaEnrollmentRequired?: boolean;
 };
 
 export type AuthenticatedRequest<
