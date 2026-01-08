@@ -1,4 +1,4 @@
-name: Sync n8n-advanced (Master & Highest Version)
+name: Sync n8n-next with Custom Nodes
 
 on:
   schedule:
@@ -24,100 +24,111 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
-      - name: Sync Upstream (StardawnAI)
+      - name: Get n8n Pre-Release Version
+        id: n8n_version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git remote add upstream https://github.com/StardawnAI/n8n-advanced.git
+          # Get latest pre-release OR the highest version (includes RCs)
+          PRERELEASE=$(gh release list --repo n8n-io/n8n --limit 10 --json tagName,isPrerelease --jq '.[] | select(.isPrerelease) | .tagName' | head -n 1)
           
-          # 1. Fetch code
-          git fetch upstream
+          if [ -z "$PRERELEASE" ]; then
+            # No pre-release found, use highest version
+            echo "No pre-release found, using highest version..."
+            git remote add n8n-official https://github.com/n8n-io/n8n.git || true
+            git fetch n8n-official --tags --force
+            PRERELEASE=$(git tag --list 'n8n@*' | sort -V | tail -n 1)
+          fi
           
-          # 2. Merge MASTER 
-          git merge upstream/master --no-edit --allow-unrelated-histories -X ours
+          echo "Selected version: $PRERELEASE"
+          echo "version=$PRERELEASE" >> $GITHUB_OUTPUT
 
-      - name: Restore README & Patch Dockerfile
+      - name: Sync from n8n-io/n8n
         run: |
-          git checkout HEAD -- README.md
-          # Force n8n:next in Dockerfile
-          sed -i 's|n8nio/n8n:latest|n8nio/n8n:next|g' .devcontainer/Dockerfile
+          N8N_VERSION="${{ steps.n8n_version.outputs.version }}"
+          
+          git remote add n8n-official https://github.com/n8n-io/n8n.git || true
+          git fetch n8n-official --tags --force
+          
+          # Merge the pre-release tag
+          git merge "$N8N_VERSION" --no-edit --allow-unrelated-histories -X ours || true
 
-      - name: Push Changes
+      - name: Fetch Custom Nodes from n8n-advanced
         run: |
-          git add README.md .devcontainer/Dockerfile
+          # Add n8n-advanced remote
+          git remote add stardawn https://github.com/StardawnAI/n8n-advanced.git || true
+          git fetch stardawn master
+          
+          # Copy only the custom nodes and related files
+          git checkout stardawn/master -- packages/nodes-base/nodes/Remberg/ || true
+          git checkout stardawn/master -- packages/nodes-base/nodes/WhatsappPrivate/ || true
+          git checkout stardawn/master -- packages/nodes-base/credentials/RembergApi.credentials.ts || true
+          git checkout stardawn/master -- packages/nodes-base/credentials/WhatsappPrivateApi.credentials.ts || true
+          git checkout stardawn/master -- .github/scripts/inject-custom-nodes.sh || true
+          git checkout stardawn/master -- STARDAWN_VERSION || true
+
+      - name: Inject Custom Nodes
+        run: |
+          chmod +x .github/scripts/inject-custom-nodes.sh || true
+          bash .github/scripts/inject-custom-nodes.sh || true
+
+      - name: Commit and Push
+        run: |
+          git add -A
           
           if git diff-index --quiet HEAD; then
             echo "No changes to commit."
           else
-            git commit -m "chore: sync upstream and force n8n:next"
-            # Retry loop for push
+            git commit -m "chore: sync n8n pre-release with custom nodes"
             for i in {1..5}; do
               git push origin master && break
               sleep 10
             done
           fi
 
-      - name: Create Release (Highest Version Number)
+      - name: Create Release
         if: success()
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          echo "Fetching official tags to find the HIGHEST version number..."
+          N8N_VERSION="${{ steps.n8n_version.outputs.version }}"
           
-          # 1. Fetch tags from official repo
-          git remote add official https://github.com/n8n-io/n8n.git
-          git fetch official --tags --force
+          # Check if we need to rebuild
+          OUR_RELEASE=$(gh release view "$N8N_VERSION" --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName 2>/dev/null || echo "")
           
-          # 2. Find the HIGHEST version number (SemVer sorting)
-          TARGET_TAG=$(git tag --list 'n8n@*' | sort -V | tail -n 1)
-
-          if [ -z "$TARGET_TAG" ]; then
-            echo "::error::No tags found."
-            exit 1
-          fi
-
-          echo "Selected Highest Version: $TARGET_TAG"
-
-          # --- CHECK IF REBUILD NEEDED ---
-          RELEASE_COMMIT=$(git rev-list -n 1 "$TARGET_TAG" 2>/dev/null || echo "none")
-          CURRENT_COMMIT=$(git rev-parse HEAD)
-          
-          if [ "$RELEASE_COMMIT" = "$CURRENT_COMMIT" ]; then
-            echo "Release $TARGET_TAG already points to current code. Nothing to do."
-            exit 0
+          if [ -z "$OUR_RELEASE" ]; then
+            echo "New n8n version detected: $N8N_VERSION"
+          else
+            OUR_TAG_COMMIT=$(git for-each-ref --format='%(objectname)' "refs/tags/$N8N_VERSION" 2>/dev/null || echo "none")
+            CURRENT_HEAD=$(git rev-parse HEAD)
+            
+            if [ "$OUR_TAG_COMMIT" = "$CURRENT_HEAD" ]; then
+              echo "Release $N8N_VERSION exists and matches current code. Nothing to do."
+              exit 0
+            else
+              echo "Code changed since last release. Rebuilding..."
+            fi
           fi
           
-          # Delete old release if it exists (allows rebuild with new code)
-          gh release delete "$TARGET_TAG" --repo ${{ github.repository }} --cleanup-tag -y 2>/dev/null || true
-          # -------------------------------------------------
-
-          # 3. Force update tag on repo
-          git tag -f "$TARGET_TAG"
-          git push -f origin "$TARGET_TAG"
-
-          # Get stardawn version and commit info
+          # Delete old release if exists
+          gh release delete "$N8N_VERSION" --repo "$GITHUB_REPOSITORY" --cleanup-tag -y 2>/dev/null || true
+          
+          # Create tag
+          git tag -f "$N8N_VERSION"
+          git push -f origin "$N8N_VERSION"
+          
+          # Get versions
           STARDAWN_VERSION=$(cat STARDAWN_VERSION 2>/dev/null || echo "1.0")
           COMMIT_TITLE=$(git log -1 --pretty=%s)
           COMMIT_BODY=$(git log -1 --pretty=%b)
           
-          RELEASE_TITLE="n8n-advanced-ns Release $TARGET_TAG stardawn@$STARDAWN_VERSION"
-          RELEASE_NOTES=$(cat <<EOF
-## n8n-advanced-ns Release $TARGET_TAG stardawn@$STARDAWN_VERSION
-
-**n8n Base Version:** $TARGET_TAG (next build)
-**Stardawn Version:** $STARDAWN_VERSION
-
----
-
-### Latest Changes
-$COMMIT_TITLE
-
-$COMMIT_BODY
-EOF
-)
-
-          # 4. Create Release as LATEST
-          gh release create "$TARGET_TAG" \
-            --repo ${{ github.repository }} \
+          RELEASE_TITLE="n8n-advanced-ns $N8N_VERSION stardawn@$STARDAWN_VERSION (pre-release)"
+          RELEASE_NOTES=$(printf "## n8n-advanced-ns %s stardawn@%s\n\n**n8n Version:** %s (pre-release/next)\n**Stardawn Version:** %s\n**Custom Nodes:** Remberg, WhatsApp Private\n\n---\n\n### Latest Changes\n%s\n\n%s" "$N8N_VERSION" "$STARDAWN_VERSION" "$N8N_VERSION" "$STARDAWN_VERSION" "$COMMIT_TITLE" "$COMMIT_BODY")
+          
+          gh release create "$N8N_VERSION" \
+            --repo "$GITHUB_REPOSITORY" \
             --title "$RELEASE_TITLE" \
             --notes "$RELEASE_NOTES" \
             --target master \
+            --prerelease \
             --latest
