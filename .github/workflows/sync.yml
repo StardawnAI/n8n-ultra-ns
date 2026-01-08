@@ -10,13 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      workflows: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_PAT }}
 
       - name: Git Config
         run: |
@@ -92,11 +93,31 @@ jobs:
           git tag -f "$TARGET_TAG"
           git push -f origin "$TARGET_TAG"
 
+          # Get stardawn version and commit info
+          STARDAWN_VERSION=$(cat STARDAWN_VERSION 2>/dev/null || echo "1.0")
+          COMMIT_TITLE=$(git log -1 --pretty=%s)
+          COMMIT_BODY=$(git log -1 --pretty=%b)
+          
+          RELEASE_TITLE="n8n-advanced-ns Release $TARGET_TAG stardawn@$STARDAWN_VERSION"
+          RELEASE_NOTES=$(cat <<EOF
+## n8n-advanced-ns Release $TARGET_TAG stardawn@$STARDAWN_VERSION
+
+**n8n Base Version:** $TARGET_TAG (next build)
+**Stardawn Version:** $STARDAWN_VERSION
+
+---
+
+### Latest Changes
+$COMMIT_TITLE
+
+$COMMIT_BODY
+EOF
+)
+
           # 4. Create Release as LATEST
-          # (Note: Removed 'gh release delete' as we only run this if it creates a NEW release)
           gh release create "$TARGET_TAG" \
             --repo ${{ github.repository }} \
-            --title "$TARGET_TAG" \
-            --notes "Automated sync. Highest version number found: $TARGET_TAG" \
+            --title "$RELEASE_TITLE" \
+            --notes "$RELEASE_NOTES" \
             --target master \
             --latest
