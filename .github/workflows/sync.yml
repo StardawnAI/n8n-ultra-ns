@@ -119,26 +119,48 @@ jobs:
         run: |
           N8N_VERSION="${{ steps.n8n_version.outputs.version }}"
           
-          # Check if we need to rebuild
-          OUR_RELEASE=$(gh release view "$N8N_VERSION" --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName 2>/dev/null || echo "")
+          # --- CHECK IF REBUILD NEEDED ---
+          # Rule 1: If n8n's highest version is different from our release → Rebuild
+          # Rule 2: If same version but we pushed new code → Rebuild
+          # Rule 3: If nothing is new → EXIT 0 (do nothing)
           
-          if [ -z "$OUR_RELEASE" ]; then
-            echo "New n8n version detected: $N8N_VERSION"
+          # STEP 1: Get OUR current release tag name
+          OUR_LATEST_TAG=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
+          
+          echo "n8n's highest version: $N8N_VERSION"
+          echo "Our latest release: $OUR_LATEST_TAG"
+          
+          # STEP 2: Compare tag names
+          if [ "$N8N_VERSION" != "$OUR_LATEST_TAG" ]; then
+            echo "n8n has a different version ($N8N_VERSION). Proceeding..."
           else
-            # Get the commit SHA from GitHub API (not local)
-            RELEASE_COMMIT=$(gh api repos/$GITHUB_REPOSITORY/git/refs/tags/$N8N_VERSION --jq '.object.sha' 2>/dev/null || echo "none")
+            # Same version - check if we pushed new code
+            TAG_INFO=$(gh api repos/$GITHUB_REPOSITORY/git/refs/tags/$OUR_LATEST_TAG 2>/dev/null || echo "")
+            if [ -n "$TAG_INFO" ]; then
+              TAG_TYPE=$(echo "$TAG_INFO" | jq -r '.object.type')
+              if [ "$TAG_TYPE" = "tag" ]; then
+                TAG_SHA=$(echo "$TAG_INFO" | jq -r '.object.sha')
+                RELEASE_COMMIT=$(gh api repos/$GITHUB_REPOSITORY/git/tags/$TAG_SHA --jq '.object.sha' 2>/dev/null || echo "none")
+              else
+                RELEASE_COMMIT=$(echo "$TAG_INFO" | jq -r '.object.sha')
+              fi
+            else
+              RELEASE_COMMIT="none"
+            fi
+            
             CURRENT_HEAD=$(git rev-parse HEAD)
             
-            echo "Release commit: $RELEASE_COMMIT"
+            echo "Our release commit: $RELEASE_COMMIT"
             echo "Current HEAD: $CURRENT_HEAD"
             
             if [ "$RELEASE_COMMIT" = "$CURRENT_HEAD" ]; then
-              echo "Release $N8N_VERSION exists and matches current code. Nothing to do."
+              echo "=== NOTHING IS NEW. Exiting without changes. ==="
               exit 0
             else
-              echo "Code changed since last release. Rebuilding..."
+              echo "We pushed new code since last release. Rebuilding..."
             fi
           fi
+          # ------------------------------
           
           # Delete old release if exists
           gh release delete "$N8N_VERSION" --repo "$GITHUB_REPOSITORY" --cleanup-tag -y 2>/dev/null || true
