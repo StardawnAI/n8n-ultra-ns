@@ -111,7 +111,7 @@ jobs:
         if: steps.check.outputs.skip_sync != 'true'
         run: |
           # Add n8n-advanced remote
-          git remote add stardawn https://github.com/StardawnAI/n8n-advanced.git || true
+          git remote add stardawn https://x-access-token:${{ secrets.GH_PAT }}@github.com/StardawnAI/n8n-advanced.git || true
           git fetch stardawn master
           
           # Copy the inject script, version file, and custom nodes config
