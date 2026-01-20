@@ -24,7 +24,6 @@ import { decompressFolder } from '@/utils/compression.util';
 import { z } from 'zod';
 import { ActiveWorkflowManager } from '@/active-workflow-manager';
 import { WorkflowIndexService } from '@/modules/workflow-index/workflow-index.service';
-import { DatabaseConfig } from '@n8n/config';
 
 @Service()
 export class ImportService {
@@ -182,11 +181,8 @@ export class ImportService {
 
 		// Directly update the index for the important workflows, since they don't generate
 		// workflow-update events during import.
-		// Workflow indexing isn't supported on legacy SQLite.
-		if (!this.databaseConfig.isLegacySqlite) {
-			for (const workflow of insertedWorkflows) {
-				await this.workflowIndexService.updateIndexFor(workflow);
-			}
+		for (const workflow of insertedWorkflows) {
+			await this.workflowIndexService.updateIndexFor(workflow);
 		}
 	}
 
@@ -368,7 +364,12 @@ export class ImportService {
 		this.logger.info('✅ Successfully decompressed entities.zip');
 	}
 
-	async importEntities(inputDir: string, truncateTables: boolean, keyFilePath?: string) {
+	async importEntities(
+		inputDir: string,
+		truncateTables: boolean,
+		keyFilePath?: string,
+		skipMigrationChecks = false,
+	) {
 		validateDbTypeForImportEntities(this.dataSource.options.type);
 
 		// Read custom encryption key from file if provided
@@ -386,7 +387,11 @@ export class ImportService {
 		}
 
 		await this.decompressEntitiesZip(inputDir);
-		await this.validateMigrations(inputDir, customEncryptionKey);
+		if (!skipMigrationChecks) {
+			await this.validateMigrations(inputDir, customEncryptionKey);
+		} else {
+			this.logger.info('⏭️  Skipping migration validation checks');
+		}
 
 		await this.dataSource.transaction(async (transactionManager: EntityManager) => {
 			await this.disableForeignKeyConstraints(transactionManager);
