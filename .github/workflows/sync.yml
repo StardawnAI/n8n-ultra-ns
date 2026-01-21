@@ -137,6 +137,13 @@ jobs:
           chmod +x .github/scripts/inject-custom-nodes.sh || true
           bash .github/scripts/inject-custom-nodes.sh || true
 
+      - name: Regenerate Lockfile
+        if: steps.check.outputs.skip_sync != 'true'
+        run: |
+          echo "Regenerating pnpm-lock.yaml..."
+          npm install -g pnpm
+          pnpm install --no-frozen-lockfile
+
       - name: Commit and Push
         if: steps.check.outputs.skip_sync != 'true'
         run: |
