@@ -83,8 +83,9 @@ jobs:
           git remote add n8n-official https://github.com/n8n-io/n8n.git || true
           git fetch n8n-official --tags --force
           
-          # Merge the version tag
-          git merge "$N8N_VERSION" --no-edit --allow-unrelated-histories -X ours || true
+          # Merge with theirs strategy - take n8n's code for conflicts
+          # Our custom files (workflows, custom nodes) are restored in later steps
+          git merge "$N8N_VERSION" --no-edit --allow-unrelated-histories -X theirs || true
 
       - name: Clean up n8n-io Workflows
         if: steps.check.outputs.skip_sync != 'true'
