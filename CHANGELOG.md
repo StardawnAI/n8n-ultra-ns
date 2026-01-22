@@ -1,4 +1,13 @@
-## [1.111.1](https://github.com/n8n-io/n8n/compare/n8n@1.111.0...n8n@1.111.1) (2025-09-19)
+## [2.5.1](https://github.com/n8n-io/n8n/compare/n8n@2.5.0...n8n@2.5.1) (2026-01-22)
+
+
+### Bug Fixes
+
+* **core:** Make Respond to Chat nodes work on Chat hub with multi-main instances ([#24657](https://github.com/n8n-io/n8n/issues/24657)) ([dcdb133](https://github.com/n8n-io/n8n/commit/dcdb133b33f59ecf2db2929058d903ad5ca0e73d))
+
+
+
+# [2.5.0](https://github.com/n8n-io/n8n/compare/n8n@2.4.0...n8n@2.5.0) (2026-01-20)
 
 
 ### Bug Fixes
