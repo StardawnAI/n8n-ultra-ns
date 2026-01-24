@@ -56,7 +56,6 @@ export class ImportService {
 		private readonly cipher: Cipher,
 		private readonly activeWorkflowManager: ActiveWorkflowManager,
 		private readonly workflowIndexService: WorkflowIndexService,
-		private readonly databaseConfig: DatabaseConfig,
 	) {}
 
 	async initRecords() {
