@@ -29,25 +29,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Get the HIGHEST version number from ALL releases (stable + pre-releases)
           git remote add n8n-official https://github.com/n8n-io/n8n.git || true
           git fetch n8n-official --tags --force
           
           HIGHEST_VERSION=$(git tag --list 'n8n@*' | sort -V | tail -n 1)
           echo "version=$HIGHEST_VERSION" >> $GITHUB_OUTPUT
           
-          # Get OUR current release tag name
           OUR_LATEST_TAG=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
           
           echo "n8n's highest version: $HIGHEST_VERSION"
           echo "Our latest release: $OUR_LATEST_TAG"
           
-          # Compare tag names
           if [ "$HIGHEST_VERSION" != "$OUR_LATEST_TAG" ]; then
             echo "n8n has a different version ($HIGHEST_VERSION). Proceeding..."
             echo "skip_sync=false" >> $GITHUB_OUTPUT
           else
-            # Same version - check if we pushed new code
             TAG_INFO=$(gh api repos/$GITHUB_REPOSITORY/git/refs/tags/$OUR_LATEST_TAG 2>/dev/null || echo "")
             if [ -n "$TAG_INFO" ]; then
               TAG_TYPE=$(echo "$TAG_INFO" | jq -r '.object.type')
@@ -83,27 +79,25 @@ jobs:
           git remote add n8n-official https://github.com/n8n-io/n8n.git || true
           git fetch n8n-official --tags --force
           
-          # Merge with theirs strategy - take n8n's code for conflicts
-          # Our custom files (workflows, custom nodes) are restored in later steps
+          # Merge n8n release
           git merge "$N8N_VERSION" --no-edit --allow-unrelated-histories -X theirs || true
+          
+          # Force checkout ALL package code from n8n to ensure clean state
+          git checkout "$N8N_VERSION" -- packages/
 
       - name: Clean up n8n-io Workflows
         if: steps.check.outputs.skip_sync != 'true'
         run: |
           echo "Removing n8n-io workflows we don't need..."
           
-          # Save our workflows temporarily
           mkdir -p /tmp/our-workflows
           cp .github/workflows/sync.yml /tmp/our-workflows/ 2>/dev/null || true
           cp .github/workflows/docker-publish.yml /tmp/our-workflows/ 2>/dev/null || true
           
-          # Delete all workflows
           rm -rf .github/workflows/*
           
-          # Restore only our workflows
           cp /tmp/our-workflows/* .github/workflows/ 2>/dev/null || true
           
-          # Delete n8n-io actions we don't need (keep only scripts folder)
           find .github/actions -mindepth 1 -maxdepth 1 -type d ! -name 'scripts' -exec rm -rf {} \; 2>/dev/null || true
           
           echo "Cleanup complete."
@@ -111,19 +105,15 @@ jobs:
       - name: Fetch Custom Nodes from n8n-advanced
         if: steps.check.outputs.skip_sync != 'true'
         run: |
-          # Add n8n-advanced remote
           git remote add stardawn https://x-access-token:${{ secrets.GH_PAT }}@github.com/StardawnAI/n8n-advanced.git || true
           git fetch stardawn master
           
-          # Copy the inject script, version file, and custom nodes config
           git checkout stardawn/master -- .github/scripts/inject-custom-nodes.sh || true
           git checkout stardawn/master -- STARDAWN_VERSION || true
           git checkout stardawn/master -- CUSTOM_NODES.txt || true
           
-          # Dynamically copy all custom nodes listed in CUSTOM_NODES.txt
           if [ -f CUSTOM_NODES.txt ]; then
             while IFS= read -r path || [ -n "$path" ]; do
-              # Skip empty lines and comments
               [[ -z "$path" || "$path" == \#* ]] && continue
               echo "Fetching: $path"
               git checkout stardawn/master -- "$path" 2>/dev/null || echo "  (not found, skipping)"
@@ -150,12 +140,10 @@ jobs:
         run: |
           git add -A
           
-          # Commit any additional changes (custom nodes, etc.)
           if ! git diff-index --quiet HEAD; then
             git commit -m "chore: sync n8n pre-release with custom nodes"
           fi
           
-          # ALWAYS push - the merge creates a commit that must be pushed
           for i in {1..5}; do
             git push origin master && break
             sleep 10
@@ -168,14 +156,11 @@ jobs:
         run: |
           N8N_VERSION="${{ steps.check.outputs.version }}"
           
-          # Delete old release if exists
           gh release delete "$N8N_VERSION" --repo "$GITHUB_REPOSITORY" --cleanup-tag -y 2>/dev/null || true
           
-          # Create tag
           git tag -f "$N8N_VERSION"
           git push -f origin "$N8N_VERSION"
           
-          # Get versions
           STARDAWN_VERSION=$(cat STARDAWN_VERSION 2>/dev/null || echo "1.0")
           COMMIT_TITLE=$(git log -1 --pretty=%s)
           COMMIT_BODY=$(git log -1 --pretty=%b)
