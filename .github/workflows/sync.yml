@@ -31,15 +31,15 @@ jobs:
         run: |
           git remote add n8n-official https://github.com/n8n-io/n8n.git || true
           git fetch n8n-official --tags --force
-          
+
           HIGHEST_VERSION=$(git tag --list 'n8n@*' | sort -V | tail -n 1)
           echo "version=$HIGHEST_VERSION" >> $GITHUB_OUTPUT
-          
+
           OUR_LATEST_TAG=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
-          
+
           echo "n8n's highest version: $HIGHEST_VERSION"
           echo "Our latest release: $OUR_LATEST_TAG"
-          
+
           if [ "$HIGHEST_VERSION" != "$OUR_LATEST_TAG" ]; then
             echo "n8n has a different version ($HIGHEST_VERSION). Proceeding..."
             echo "skip_sync=false" >> $GITHUB_OUTPUT
@@ -56,12 +56,12 @@ jobs:
             else
               RELEASE_COMMIT="none"
             fi
-            
+
             CURRENT_HEAD=$(git rev-parse HEAD)
-            
+
             echo "Our release commit: $RELEASE_COMMIT"
             echo "Current HEAD: $CURRENT_HEAD"
-            
+
             if [ "$RELEASE_COMMIT" = "$CURRENT_HEAD" ]; then
               echo "=== NOTHING IS NEW. Skipping all remaining steps. ==="
               echo "skip_sync=true" >> $GITHUB_OUTPUT
@@ -75,43 +75,37 @@ jobs:
         if: steps.check.outputs.skip_sync != 'true'
         run: |
           N8N_VERSION="${{ steps.check.outputs.version }}"
-          
+
           git remote add n8n-official https://github.com/n8n-io/n8n.git || true
           git fetch n8n-official --tags --force
-          
-          # Merge n8n release
+
           git merge "$N8N_VERSION" --no-edit --allow-unrelated-histories -X theirs || true
-          
-          # Force checkout ALL package code from n8n to ensure clean state
+
           git checkout "$N8N_VERSION" -- packages/
 
       - name: Clean up n8n-io Workflows
         if: steps.check.outputs.skip_sync != 'true'
         run: |
-          echo "Removing n8n-io workflows we don't need..."
-          
           mkdir -p /tmp/our-workflows
           cp .github/workflows/sync.yml /tmp/our-workflows/ 2>/dev/null || true
           cp .github/workflows/docker-publish.yml /tmp/our-workflows/ 2>/dev/null || true
-          
+
           rm -rf .github/workflows/*
-          
+
           cp /tmp/our-workflows/* .github/workflows/ 2>/dev/null || true
-          
+
           find .github/actions -mindepth 1 -maxdepth 1 -type d ! -name 'scripts' -exec rm -rf {} \; 2>/dev/null || true
-          
-          echo "Cleanup complete."
 
       - name: Fetch Custom Nodes from n8n-advanced
         if: steps.check.outputs.skip_sync != 'true'
         run: |
           git remote add stardawn https://x-access-token:${{ secrets.GH_PAT }}@github.com/StardawnAI/n8n-advanced.git || true
           git fetch stardawn master
-          
+
           git checkout stardawn/master -- .github/scripts/inject-custom-nodes.sh || true
           git checkout stardawn/master -- STARDAWN_VERSION || true
           git checkout stardawn/master -- CUSTOM_NODES.txt || true
-          
+
           if [ -f CUSTOM_NODES.txt ]; then
             while IFS= read -r path || [ -n "$path" ]; do
               [[ -z "$path" || "$path" == \#* ]] && continue
@@ -119,8 +113,6 @@ jobs:
               git checkout stardawn/master -- "$path" 2>/dev/null || echo "  (not found, skipping)"
             done < CUSTOM_NODES.txt
           fi
-          
-          echo "Custom nodes fetch complete."
 
       - name: Inject Custom Nodes
         if: steps.check.outputs.skip_sync != 'true'
@@ -128,10 +120,15 @@ jobs:
           chmod +x .github/scripts/inject-custom-nodes.sh || true
           bash .github/scripts/inject-custom-nodes.sh || true
 
+      - name: Setup Node.js
+        if: steps.check.outputs.skip_sync != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: Regenerate Lockfile
         if: steps.check.outputs.skip_sync != 'true'
         run: |
-          echo "Regenerating pnpm-lock.yaml..."
           npm install -g pnpm
           pnpm install --no-frozen-lockfile
 
@@ -139,11 +136,11 @@ jobs:
         if: steps.check.outputs.skip_sync != 'true'
         run: |
           git add -A
-          
+
           if ! git diff-index --quiet HEAD; then
             git commit -m "chore: sync n8n pre-release with custom nodes"
           fi
-          
+
           for i in {1..5}; do
             git push origin master && break
             sleep 10
@@ -155,19 +152,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           N8N_VERSION="${{ steps.check.outputs.version }}"
-          
+
           gh release delete "$N8N_VERSION" --repo "$GITHUB_REPOSITORY" --cleanup-tag -y 2>/dev/null || true
-          
+
           git tag -f "$N8N_VERSION"
           git push -f origin "$N8N_VERSION"
-          
+
           STARDAWN_VERSION=$(cat STARDAWN_VERSION 2>/dev/null || echo "1.0")
           COMMIT_TITLE=$(git log -1 --pretty=%s)
           COMMIT_BODY=$(git log -1 --pretty=%b)
-          
+
           RELEASE_TITLE="n8n-advanced-ns $N8N_VERSION stardawn@$STARDAWN_VERSION"
           RELEASE_NOTES=$(printf "## n8n-advanced-ns %s stardawn@%s\n\n**n8n Version:** %s (next build)\n**Stardawn Version:** %s\n**Custom Nodes:** Remberg, WhatsApp Private\n\n---\n\n### Latest Changes\n%s\n\n%s" "$N8N_VERSION" "$STARDAWN_VERSION" "$N8N_VERSION" "$STARDAWN_VERSION" "$COMMIT_TITLE" "$COMMIT_BODY")
-          
+
           gh release create "$N8N_VERSION" \
             --repo "$GITHUB_REPOSITORY" \
             --title "$RELEASE_TITLE" \
