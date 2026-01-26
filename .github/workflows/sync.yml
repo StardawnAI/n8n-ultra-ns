@@ -2,7 +2,7 @@ name: Sync n8n-next with Custom Nodes
 
 on:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '30 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -129,8 +129,9 @@ jobs:
       - name: Regenerate Lockfile
         if: steps.check.outputs.skip_sync != 'true'
         run: |
+          rm -f pnpm-lock.yaml
           npm install -g pnpm
-          pnpm install --no-frozen-lockfile
+          pnpm install
 
       - name: Commit and Push
         if: steps.check.outputs.skip_sync != 'true'
