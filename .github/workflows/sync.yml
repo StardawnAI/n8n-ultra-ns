@@ -59,19 +59,16 @@ jobs:
 
             CURRENT_HEAD=$(git rev-parse HEAD)
 
-            echo "Our release commit: $RELEASE_COMMIT"
-            echo "Current HEAD: $CURRENT_HEAD"
-
             if [ "$RELEASE_COMMIT" = "$CURRENT_HEAD" ]; then
-              echo "=== NOTHING IS NEW. Skipping all remaining steps. ==="
+              echo "=== NOTHING IS NEW. Skipping. ==="
               echo "skip_sync=true" >> $GITHUB_OUTPUT
             else
-              echo "We pushed new code since last release. Rebuilding..."
+              echo "New code since last release. Rebuilding..."
               echo "skip_sync=false" >> $GITHUB_OUTPUT
             fi
           fi
 
-      - name: Sync n8n code only
+      - name: Sync n8n code
         if: steps.check.outputs.skip_sync != 'true'
         run: |
           N8N_VERSION="${{ steps.check.outputs.version }}"
@@ -121,11 +118,11 @@ jobs:
         with:
           node-version: ${{ steps.node.outputs.version }}
 
-      - name: Regenerate Lockfile
+      - name: Install Dependencies
         if: steps.check.outputs.skip_sync != 'true'
         run: |
           npm install -g pnpm
-          pnpm install
+          pnpm install --frozen-lockfile
 
       - name: Commit and Push
         if: steps.check.outputs.skip_sync != 'true'
