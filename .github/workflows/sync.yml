@@ -128,12 +128,16 @@ jobs:
         if: steps.check.outputs.skip_sync != 'true'
         run: |
           git add -A
-          git commit -m "chore: sync n8n ${{ steps.check.outputs.version }} with custom nodes"
 
-          for i in {1..5}; do
-            git push origin master && break
-            sleep 10
-          done
+          if git diff-index --quiet HEAD; then
+            echo "Nothing to commit"
+          else
+            git commit -m "chore: sync n8n ${{ steps.check.outputs.version }} with custom nodes"
+            for i in {1..5}; do
+              git push origin master && break
+              sleep 10
+            done
+          fi
 
       - name: Create Release
         if: steps.check.outputs.skip_sync != 'true'
