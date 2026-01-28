@@ -29,19 +29,25 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git remote add n8n-official https://github.com/n8n-io/n8n.git || true
-          git fetch n8n-official --tags --force
+          for i in {1..5}; do
+            LATEST_RELEASE=$(gh release view --repo n8n-io/n8n --json tagName --jq .tagName) && break
+            sleep 10
+          done
 
-          HIGHEST_VERSION=$(git tag --list 'n8n@*' | sort -V | tail -n 1)
-          echo "version=$HIGHEST_VERSION" >> $GITHUB_OUTPUT
+          if [ -z "$LATEST_RELEASE" ]; then
+            echo "CRITICAL: Could not find release tag. Aborting."
+            exit 1
+          fi
+
+          echo "version=$LATEST_RELEASE" >> $GITHUB_OUTPUT
 
           OUR_LATEST_TAG=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
 
-          echo "n8n's highest version: $HIGHEST_VERSION"
+          echo "n8n's latest release: $LATEST_RELEASE"
           echo "Our latest release: $OUR_LATEST_TAG"
 
-          if [ "$HIGHEST_VERSION" != "$OUR_LATEST_TAG" ]; then
-            echo "n8n has a different version ($HIGHEST_VERSION). Proceeding..."
+          if [ "$LATEST_RELEASE" != "$OUR_LATEST_TAG" ]; then
+            echo "n8n has a new release ($LATEST_RELEASE). Proceeding..."
             echo "skip_sync=false" >> $GITHUB_OUTPUT
           else
             TAG_INFO=$(gh api repos/$GITHUB_REPOSITORY/git/refs/tags/$OUR_LATEST_TAG 2>/dev/null || echo "")
