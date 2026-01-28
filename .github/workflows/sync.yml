@@ -73,11 +73,13 @@ jobs:
               echo "skip_sync=false" >> $GITHUB_OUTPUT
             fi
           fi
-
       - name: Sync n8n code
         if: steps.check.outputs.skip_sync != 'true'
         run: |
           N8N_VERSION="${{ steps.check.outputs.version }}"
+
+          git remote add n8n-official https://github.com/n8n-io/n8n.git || true
+          git fetch n8n-official --tags --force
 
           git checkout "$N8N_VERSION" -- packages/
           git checkout "$N8N_VERSION" -- package.json
