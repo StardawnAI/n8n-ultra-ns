@@ -130,7 +130,7 @@ jobs:
         if: steps.check.outputs.skip_sync != 'true'
         run: |
           npm install -g pnpm
-          pnpm install --frozen-lockfile
+          pnpm install --no-frozen-lockfile
 
       - name: Commit and Push
         if: steps.check.outputs.skip_sync != 'true'
