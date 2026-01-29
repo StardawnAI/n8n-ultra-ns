@@ -46,15 +46,7 @@ export class ActivateExecuteWorkflowTriggerWorkflows1763048000000 implements Irr
 		return { executeWorkflowTriggerNode, errorTriggerNode };
 	}
 
-	async up({
-		escape,
-		runQuery,
-		runInBatches,
-		parseJson,
-		isPostgres,
-		logger,
-		migrationName,
-	}: MigrationContext) {
+	async up({ escape, runQuery, runInBatches, parseJson, isPostgres }: MigrationContext) {
 		const tableName = escape.tableName('workflow_entity');
 		const historyTableName = escape.tableName('workflow_history');
 		const idColumn = escape.columnName('id');
@@ -74,15 +66,7 @@ export class ActivateExecuteWorkflowTriggerWorkflows1763048000000 implements Irr
 
 		await runInBatches<Workflow>(inactiveWorkflows, async (workflows) => {
 			for (const workflow of workflows) {
-				let nodes: Node[];
-				try {
-					nodes = parseJson(workflow.nodes);
-				} catch (error) {
-					logger.warn(
-						`[${migrationName}] Failed to parse nodes for workflow ${workflow.id}: ${error instanceof Error ? error.message : 'Unknown error'}. Skipping this workflow.`,
-					);
-					continue;
-				}
+				const nodes = parseJson(workflow.nodes);
 
 				const { executeWorkflowTriggerNode, errorTriggerNode } =
 					this.findExecuteWfAndErrorTriggers(nodes);

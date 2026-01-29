@@ -198,14 +198,12 @@ export class License implements LicenseProvider {
 		}
 	}
 
-	async activate(activationKey: string): Promise<void>;
-	async activate(activationKey: string, eulaUri: string, userEmail: string): Promise<void>;
-	async activate(activationKey: string, eulaUri?: string, userEmail?: string): Promise<void> {
+	async activate(activationKey: string, eulaUri?: string): Promise<void> {
 		if (!this.manager) {
 			return;
 		}
 
-		await this.manager.activate(activationKey, { eulaUri, email: userEmail });
+		await this.manager.activate(activationKey, eulaUri);
 		this.logger.debug('License activated');
 	}
 

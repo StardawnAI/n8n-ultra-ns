@@ -103,7 +103,7 @@ export class LmChatAzureOpenAi implements INodeType {
 
 			this.logger.info(`Instantiating AzureChatOpenAI model with deployment: ${modelName}`);
 
-			const timeout = options.timeout;
+			// Create and return the model
 			const model = new AzureChatOpenAI({
 				// Model name is required so logs are correct
 				// Also ensures internal logic (like mapping "maxTokens" to "maxCompletionTokens") is correct
@@ -111,15 +111,12 @@ export class LmChatAzureOpenAi implements INodeType {
 				azureOpenAIApiDeploymentName: modelName,
 				...modelConfig,
 				...options,
-				timeout,
+				timeout: options.timeout ?? 60000,
 				maxRetries: options.maxRetries ?? 2,
 				callbacks: [new N8nLlmTracing(this)],
 				configuration: {
 					fetchOptions: {
-						dispatcher: getProxyAgent(undefined, {
-							headersTimeout: timeout,
-							bodyTimeout: timeout,
-						}),
+						dispatcher: getProxyAgent(),
 					},
 				},
 				modelKwargs: options.responseFormat

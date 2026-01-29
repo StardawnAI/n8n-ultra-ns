@@ -54,8 +54,7 @@ type ModuleName =
 	| 'community-packages'
 	| 'data-table'
 	| 'mcp'
-	| 'dynamic-credentials'
-	| 'log-streaming';
+	| 'dynamic-credentials';
 
 export interface SetupProps {
 	endpointGroups?: EndpointGroup[];

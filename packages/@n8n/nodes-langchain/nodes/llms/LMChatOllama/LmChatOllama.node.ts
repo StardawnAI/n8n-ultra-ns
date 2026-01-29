@@ -9,7 +9,6 @@ import {
 } from 'n8n-workflow';
 
 import { getConnectionHintNoticeField } from '@utils/sharedFields';
-import { proxyFetch } from '@utils/httpProxyAgent';
 
 import { ollamaModel, ollamaOptions, ollamaDescription } from '../LMOllama/description';
 import { makeN8nLlmFailedAttemptHandler } from '../n8nLlmFailedAttemptHandler';
@@ -65,9 +64,6 @@ export class LmChatOllama implements INodeType {
 				}
 			: undefined;
 
-		const fetchWithTimeout = async (input: RequestInfo | URL, init?: RequestInit) =>
-			await proxyFetch(input.toString(), init, {});
-
 		const model = new ChatOllama({
 			...options,
 			baseUrl: credentials.baseUrl as string,
@@ -76,7 +72,6 @@ export class LmChatOllama implements INodeType {
 			callbacks: [new N8nLlmTracing(this)],
 			onFailedAttempt: makeN8nLlmFailedAttemptHandler(this),
 			headers,
-			fetch: fetchWithTimeout,
 		});
 
 		return {

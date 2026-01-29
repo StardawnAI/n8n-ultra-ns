@@ -91,7 +91,6 @@ describe('CredentialsController', () => {
 				projectType: projectOwningCredentialData.type,
 				publicApi: false,
 				uiContext: newCredentialsPayload.uiContext,
-				isDynamic: false,
 			});
 
 			expect(newApiKey).toEqual(createdCredentials);
@@ -193,7 +192,6 @@ describe('CredentialsController', () => {
 				user: ownerReq.user,
 				credentialType: existingCredential.type,
 				credentialId: existingCredential.id,
-				isDynamic: false,
 			});
 		});
 

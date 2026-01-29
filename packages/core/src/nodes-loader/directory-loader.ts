@@ -77,9 +77,6 @@ export abstract class DirectoryLoader {
 	// Stores the different versions with their individual descriptions
 	types: Types = { nodes: [], credentials: [] };
 
-	/** Whether node types are no longer in memory. */
-	private typesReleased = false;
-
 	readonly nodesByCredential: Record<string, string[]> = {};
 
 	protected readonly logger = Container.get(Logger);
@@ -113,24 +110,6 @@ export abstract class DirectoryLoader {
 		this.credentialTypes = {};
 		this.known = { nodes: {}, credentials: {} };
 		this.types = { nodes: [], credentials: [] };
-	}
-
-	releaseTypes() {
-		this.typesReleased = true;
-		this.types = { nodes: [], credentials: [] };
-	}
-
-	/** Reload types from source if they were released from memory */
-	async ensureTypesLoaded() {
-		if (this.typesReleased) {
-			this.typesReleased = false;
-			try {
-				await this.loadAll();
-			} catch (error) {
-				this.typesReleased = true;
-				throw error;
-			}
-		}
 	}
 
 	protected resolvePath(file: string) {

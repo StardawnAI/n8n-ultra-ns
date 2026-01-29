@@ -14,7 +14,7 @@ describe('N8NActionBox', () => {
 				buttonType: 'primary',
 			},
 			global: {
-				stubs: ['N8nHeading', 'N8nText', 'N8nButton', 'N8nCallout', 'N8nTooltip'],
+				stubs: ['N8nHeading', 'N8nText', 'N8nButton', 'N8nCallout'],
 			},
 		});
 		expect(wrapper.html()).toMatchSnapshot();
@@ -30,7 +30,7 @@ describe('N8NActionBox', () => {
 				buttonType: 'primary',
 			},
 			global: {
-				stubs: ['N8nHeading', 'N8nText', 'N8nButton', 'N8nCallout', 'N8nIcon', 'N8nTooltip'],
+				stubs: ['N8nHeading', 'N8nText', 'N8nButton', 'N8nCallout', 'N8nIcon'],
 			},
 		});
 		expect(wrapper.html()).toMatchSnapshot();

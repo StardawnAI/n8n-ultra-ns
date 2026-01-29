@@ -8,7 +8,7 @@ describe('@BackendModule decorator', () => {
 	let moduleMetadata: ModuleMetadata;
 
 	beforeEach(() => {
-		vi.resetAllMocks();
+		jest.resetAllMocks();
 
 		moduleMetadata = new ModuleMetadata();
 		Container.set(ModuleMetadata, moduleMetadata);

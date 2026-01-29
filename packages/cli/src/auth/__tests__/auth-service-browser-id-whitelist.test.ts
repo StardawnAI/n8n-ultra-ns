@@ -39,7 +39,6 @@ describe('AuthService Browser ID Whitelist', () => {
 
 			expect(skipEndpoints).toContain('/types/nodes.json');
 			expect(skipEndpoints).toContain('/types/credentials.json');
-			expect(skipEndpoints).toContain('/types/node-versions.json');
 		});
 
 		it('should include oauth callback urls in the skip browser ID check endpoints', () => {

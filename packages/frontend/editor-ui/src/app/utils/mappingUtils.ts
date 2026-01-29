@@ -1,9 +1,5 @@
-import { isResourceLocatorValue, BINARY_MODE_COMBINED } from 'n8n-workflow';
-import type {
-	INodeProperties,
-	NodeParameterValueType,
-	WorkflowSettingsBinaryMode,
-} from 'n8n-workflow';
+import { isResourceLocatorValue } from 'n8n-workflow';
+import type { INodeProperties, NodeParameterValueType } from 'n8n-workflow';
 import { isExpression } from './expressions';
 
 const validJsIdNameRegex = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
@@ -34,14 +30,12 @@ export function getMappedExpression({
 	nodeName,
 	distanceFromActive,
 	path,
-	binaryMode,
 }: {
 	nodeName: string;
 	distanceFromActive: number;
 	path: Array<string | number> | string;
-	binaryMode?: WorkflowSettingsBinaryMode;
 }) {
-	const root = getNodeParentExpression({ nodeName, distanceFromActive, binaryMode });
+	const root = getNodeParentExpression({ nodeName, distanceFromActive });
 
 	if (typeof path === 'string') {
 		return `{{ ${root}${path} }}`;
@@ -53,18 +47,13 @@ export function getMappedExpression({
 export function getNodeParentExpression({
 	nodeName,
 	distanceFromActive,
-	binaryMode,
 }: {
 	nodeName: string;
 	distanceFromActive: number;
-	binaryMode?: WorkflowSettingsBinaryMode;
 }) {
-	const path = binaryMode === BINARY_MODE_COMBINED ? ['item'] : ['item', 'json'];
-	const immidiateParent = binaryMode === BINARY_MODE_COMBINED ? '$item' : '$json';
-
 	return distanceFromActive === 1
-		? immidiateParent
-		: generatePath(`$('${escapeMappingString(nodeName)}')`, path);
+		? '$json'
+		: generatePath(`$('${escapeMappingString(nodeName)}')`, ['item', 'json']);
 }
 
 const unquote = (str: string) => {

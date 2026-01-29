@@ -168,7 +168,6 @@ export interface IExecutionTrackProperties extends ITelemetryTrackProperties {
 	error_node_type?: string;
 	is_manual: boolean;
 	crashed?: boolean;
-	used_dynamic_credentials?: boolean;
 }
 
 // ----------------------------------

@@ -7,6 +7,7 @@ import type {
 	User,
 	Variables,
 	WorkflowEntity,
+	WorkflowTagMapping,
 } from '@n8n/db';
 import {
 	CredentialsRepository,
@@ -19,7 +20,6 @@ import {
 	UserRepository,
 	VariablesRepository,
 	WorkflowRepository,
-	WorkflowTagMapping,
 	WorkflowTagMappingRepository,
 	WorkflowPublishHistoryRepository,
 } from '@n8n/db';
@@ -73,7 +73,7 @@ import type {
 	StatusResourceOwner,
 	TeamResourceOwner,
 } from './types/resource-owner';
-import { SourceControlContext } from './types/source-control-context';
+import type { SourceControlContext } from './types/source-control-context';
 import type { SourceControlWorkflowVersionId } from './types/source-control-workflow-version-id';
 import { VariablesService } from '../../environments.ee/variables/variables.service.ee';
 
@@ -537,7 +537,10 @@ export class SourceControlImportService {
 		return { tags: [], mappings: [] };
 	}
 
-	async getLocalTagsAndMappingsFromDb(context: SourceControlContext): Promise<ExportableTags> {
+	async getLocalTagsAndMappingsFromDb(context: SourceControlContext): Promise<{
+		tags: TagEntity[];
+		mappings: WorkflowTagMapping[];
+	}> {
 		const localTags = await this.tagRepository.find({
 			select: ['id', 'name'],
 		});
@@ -858,7 +861,7 @@ export class SourceControlImportService {
 		return importCredentialsResult.filter((e) => e !== undefined);
 	}
 
-	async importTagsFromWorkFolder(candidate: SourceControlledFile, user: User) {
+	async importTagsFromWorkFolder(candidate: SourceControlledFile) {
 		let mappedTags;
 		try {
 			this.logger.debug(`Importing tags from file ${candidate.file}`);
@@ -904,50 +907,18 @@ export class SourceControlImportService {
 			}),
 		);
 
-		// Get all workflow IDs from remote files (in scope for this import)
-		// This ensures we delete mappings for workflows with zero tags
-		const context = new SourceControlContext(user);
-		const remoteWorkflowIds = (await this.getRemoteVersionIdsFromFiles(context)).map((wf) => wf.id);
-
-		// Include both workflows with mappings AND workflows in remote files (even with zero tags)
-		const workflowIdsInImport = [
-			...new Set([
-				...mappedTags.mappings.map((mapping) => String(mapping.workflowId)),
-				...remoteWorkflowIds,
-			]),
-		].filter((workflowId) => existingWorkflowIds.has(workflowId));
-
-		const mappingsToImport = mappedTags.mappings.filter((mapping) =>
-			existingWorkflowIds.has(String(mapping.workflowId)),
-		);
-
-		/**
-		 * Use a transaction here as we "delete" them all and then "create" them again.
-		 *
-		 * Without a transaction we run the risk of deleting them all, then experiencing a failure on the "create" and
-		 * leaving the customer with a partial tag/workflow import
-		 */
-		await this.workflowTagMappingRepository.manager.transaction(async (transactionManager) => {
-			if (workflowIdsInImport.length > 0) {
-				await transactionManager.delete(WorkflowTagMapping, {
-					workflowId: In(workflowIdsInImport),
-				});
-			}
-
-			if (mappingsToImport.length > 0) {
-				await transactionManager.upsert(
-					WorkflowTagMapping,
-					mappingsToImport.map((mapping) => ({
-						tagId: String(mapping.tagId),
-						workflowId: String(mapping.workflowId),
-					})),
+		await Promise.all(
+			mappedTags.mappings.map(async (mapping) => {
+				if (!existingWorkflowIds.has(String(mapping.workflowId))) return;
+				await this.workflowTagMappingRepository.upsert(
+					{ tagId: String(mapping.tagId), workflowId: String(mapping.workflowId) },
 					{
 						skipUpdateIfNoValuesChanged: true,
 						conflictPaths: { tagId: true, workflowId: true },
 					},
 				);
-			}
-		});
+			}),
+		);
 
 		return mappedTags;
 	}

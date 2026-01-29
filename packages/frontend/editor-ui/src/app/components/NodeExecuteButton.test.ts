@@ -2,9 +2,8 @@ import { reactive } from 'vue';
 import { createTestingPinia } from '@pinia/testing';
 import { useRouter } from 'vue-router';
 import userEvent from '@testing-library/user-event';
-import { waitFor } from '@testing-library/vue';
 import { createComponentRenderer } from '@/__tests__/render';
-import { type MockedStore, mockedStore, getTooltip } from '@/__tests__/utils';
+import { type MockedStore, mockedStore } from '@/__tests__/utils';
 import { mockNode, mockNodeTypeDescription } from '@/__tests__/mocks';
 import { nodeViewEventBus } from '@/app/event-bus';
 import { AI_TRANSFORM_NODE_TYPE, AI_TRANSFORM_CODE_GENERATED_FOR_PROMPT } from 'n8n-workflow';
@@ -229,17 +228,16 @@ describe('NodeExecuteButton', () => {
 			mockNode({ name: 'test', type: SET_NODE_TYPE, disabled: true }),
 		);
 
-		const { getByRole } = renderComponent();
+		const { getByRole, queryByRole } = renderComponent();
 
 		const button = getByRole('button');
 		expect(button).toBeDisabled();
+		expect(queryByRole('tooltip')).not.toBeInTheDocument();
 
 		await userEvent.hover(button);
 
-		await waitFor(() => {
-			const tooltip = getTooltip();
-			expect(tooltip).toHaveTextContent('Enable node to execute');
-		});
+		expect(getByRole('tooltip')).toBeVisible();
+		expect(getByRole('tooltip')).toHaveTextContent('Enable node to execute');
 	});
 
 	it('should be disabled when workflow is running but node is not executing', async () => {
@@ -249,17 +247,16 @@ describe('NodeExecuteButton', () => {
 			mockNode({ name: 'test-node', type: SET_NODE_TYPE }),
 		);
 
-		const { getByRole } = renderComponent();
+		const { getByRole, queryByRole } = renderComponent();
 
 		const button = getByRole('button');
 		expect(button).toBeDisabled();
+		expect(queryByRole('tooltip')).not.toBeInTheDocument();
 
 		await userEvent.hover(button);
 
-		await waitFor(() => {
-			const tooltip = getTooltip();
-			expect(tooltip).toHaveTextContent('Workflow is already running');
-		});
+		expect(getByRole('tooltip')).toBeVisible();
+		expect(getByRole('tooltip')).toHaveTextContent('Workflow is already running');
 	});
 
 	it('disables button when trigger node has issues', async () => {

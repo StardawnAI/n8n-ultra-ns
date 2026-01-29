@@ -22,6 +22,7 @@ const BASE_ENV: Record<string, string> = {
 	N8N_LICENSE_TENANT_ID: process.env.N8N_LICENSE_TENANT_ID ?? '1001',
 	N8N_LICENSE_ACTIVATION_KEY: process.env.N8N_LICENSE_ACTIVATION_KEY ?? '',
 	N8N_LICENSE_CERT: process.env.N8N_LICENSE_CERT ?? '',
+	N8N_RUNNERS_ENABLED: 'true',
 	N8N_RUNNERS_MODE: 'external',
 	N8N_RUNNERS_AUTH_TOKEN: 'test',
 	N8N_RUNNERS_BROKER_LISTEN_ADDRESS: '0.0.0.0',
@@ -84,16 +85,14 @@ function computeEnvironment(options: N8NInstancesOptions): Record<string, string
 		env.OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS = 'true';
 
 		if (mains > 1) {
-			if (!process.env.N8N_LICENSE_ACTIVATION_KEY && !process.env.N8N_LICENSE_CERT) {
-				throw new Error(
-					'N8N_LICENSE_ACTIVATION_KEY or N8N_LICENSE_CERT is required for multi-main instances',
-				);
+			if (!process.env.N8N_LICENSE_ACTIVATION_KEY) {
+				throw new Error('N8N_LICENSE_ACTIVATION_KEY is required for multi-main instances');
 			}
 			env.N8N_MULTI_MAIN_SETUP_ENABLED = 'true';
 		}
 	}
 
-	if (mains === 1 && baseUrl && !serviceEnvironment.WEBHOOK_URL) {
+	if (mains === 1 && baseUrl) {
 		env.WEBHOOK_URL = baseUrl;
 		env.N8N_PORT = '5678';
 	}

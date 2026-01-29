@@ -1,5 +1,4 @@
 import { CallToolResultSchema } from '@modelcontextprotocol/sdk/types.js';
-import { StructuredToolkit } from 'n8n-core';
 import {
 	type IDataObject,
 	type IExecuteFunctions,
@@ -17,7 +16,7 @@ import { getConnectionHintNoticeField } from '@utils/sharedFields';
 
 import { getTools } from './loadOptions';
 import type { McpToolIncludeMode } from './types';
-import { createCallTool, getSelectedTools, mcpToolToDynamicTool } from './utils';
+import { createCallTool, getSelectedTools, McpToolkit, mcpToolToDynamicTool } from './utils';
 import { credentials, transportSelect } from '../shared/descriptions';
 import type { McpAuthenticationOption, McpServerTransport } from '../shared/types';
 import {
@@ -129,8 +128,7 @@ export class McpClientTool implements INodeType {
 		codex: {
 			categories: ['AI'],
 			subcategories: {
-				AI: ['Tools'],
-				Tools: ['Recommended Tools'],
+				AI: ['Model Context Protocol', 'Tools'],
 			},
 			alias: ['Model Context Protocol', 'MCP Client'],
 			resources: {
@@ -391,7 +389,7 @@ export class McpClientTool implements INodeType {
 
 		this.logger.debug(`McpClientTool: Connected to MCP Server with ${tools.length} tools`);
 
-		const toolkit = new StructuredToolkit(tools);
+		const toolkit = new McpToolkit(tools);
 
 		return { response: toolkit, closeFunction: async () => await client.close() };
 	}

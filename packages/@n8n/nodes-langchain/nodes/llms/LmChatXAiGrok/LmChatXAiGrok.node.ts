@@ -226,14 +226,10 @@ export class LmChatXAiGrok implements INodeType {
 			responseFormat?: 'text' | 'json_object';
 		};
 
-		const timeout = options.timeout;
 		const configuration: ClientOptions = {
 			baseURL: credentials.url,
 			fetchOptions: {
-				dispatcher: getProxyAgent(credentials.url, {
-					headersTimeout: timeout,
-					bodyTimeout: timeout,
-				}),
+				dispatcher: getProxyAgent(credentials.url),
 			},
 		};
 
@@ -241,7 +237,7 @@ export class LmChatXAiGrok implements INodeType {
 			apiKey: credentials.apiKey,
 			model: modelName,
 			...options,
-			timeout,
+			timeout: options.timeout ?? 60000,
 			maxRetries: options.maxRetries ?? 2,
 			configuration,
 			callbacks: [new N8nLlmTracing(this)],

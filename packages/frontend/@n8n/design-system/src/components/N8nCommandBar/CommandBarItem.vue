@@ -66,7 +66,7 @@ const handleMouseLeave = () => {
 	display: flex;
 	gap: var(--spacing--2xs);
 	align-items: center;
-	height: var(--command-bar-item--height);
+	height: 40px;
 	padding: 0 var(--spacing--2xs);
 	cursor: pointer;
 	border-radius: var(--radius);

@@ -9,7 +9,6 @@ import type { IUser, INodeTypeDescription, ITelemetryTrackProperties } from 'n8n
 import type { License } from '@/license';
 import type { Push } from '@/push';
 import { WorkflowBuilderService } from '@/services/ai-workflow-builder.service';
-import type { DynamicNodeParametersService } from '@/services/dynamic-node-parameters.service';
 import type { UrlService } from '@/services/url.service';
 import type { LoadNodesAndCredentials } from '@/load-nodes-and-credentials';
 import type { Telemetry } from '@/telemetry';
@@ -33,7 +32,6 @@ describe('WorkflowBuilderService', () => {
 	let mockPush: Push;
 	let mockTelemetry: Telemetry;
 	let mockInstanceSettings: InstanceSettings;
-	let mockDynamicNodeParametersService: DynamicNodeParametersService;
 	let mockUser: IUser;
 
 	beforeEach(() => {
@@ -58,8 +56,6 @@ describe('WorkflowBuilderService', () => {
 				nodes: mockNodeTypeDescriptions,
 				credentials: [],
 			},
-			postProcessLoaders: jest.fn().mockResolvedValue(undefined),
-			releaseTypes: jest.fn(),
 		} as unknown as LoadNodesAndCredentials;
 
 		mockLicense = mock<License>();
@@ -69,7 +65,6 @@ describe('WorkflowBuilderService', () => {
 		mockPush = mock<Push>();
 		mockTelemetry = mock<Telemetry>();
 		mockInstanceSettings = mock<InstanceSettings>();
-		mockDynamicNodeParametersService = mock<DynamicNodeParametersService>();
 		mockUser = mock<IUser>();
 		mockUser.id = 'test-user-id';
 
@@ -93,7 +88,6 @@ describe('WorkflowBuilderService', () => {
 			mockPush,
 			mockTelemetry,
 			mockInstanceSettings,
-			mockDynamicNodeParametersService,
 		);
 	});
 
@@ -131,7 +125,6 @@ describe('WorkflowBuilderService', () => {
 				expect.any(String), // n8nVersion
 				expect.any(Function), // onCreditsUpdated callback
 				expect.any(Function), // onTelemetryEvent callback
-				expect.any(Function), // resourceLocatorCallbackFactory
 			);
 
 			expect(result.value).toEqual({ messages: ['response'] });
@@ -174,7 +167,6 @@ describe('WorkflowBuilderService', () => {
 				expect.any(String), // n8nVersion
 				expect.any(Function), // onCreditsUpdated callback
 				expect.any(Function), // onTelemetryEvent callback
-				expect.any(Function), // resourceLocatorCallbackFactory
 			);
 		});
 

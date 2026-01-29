@@ -1,11 +1,7 @@
 import { mock } from 'jest-mock-extended';
 import type { IExecuteFunctions, INode } from 'n8n-workflow';
 
-import {
-	todoistApiRequest,
-	todoistApiGetAllRequest,
-	todoistSyncRequest,
-} from '../../GenericFunctions';
+import { todoistApiRequest, todoistSyncRequest } from '../../GenericFunctions';
 import {
 	CreateHandler,
 	CloseHandler,
@@ -44,7 +40,6 @@ import {
 // Mock the GenericFunctions
 jest.mock('../../GenericFunctions', () => ({
 	todoistApiRequest: jest.fn(),
-	todoistApiGetAllRequest: jest.fn(),
 	todoistSyncRequest: jest.fn(),
 	FormatDueDatetime: jest.fn((dateTime: string) => dateTime),
 }));
@@ -55,9 +50,6 @@ jest.mock('uuid', () => ({
 }));
 
 const mockTodoistApiRequest = todoistApiRequest as jest.MockedFunction<typeof todoistApiRequest>;
-const mockTodoistApiGetAllRequest = todoistApiGetAllRequest as jest.MockedFunction<
-	typeof todoistApiGetAllRequest
->;
 const mockTodoistSyncRequest = todoistSyncRequest as jest.MockedFunction<typeof todoistSyncRequest>;
 
 // Mock Context interface
@@ -215,19 +207,20 @@ describe('OperationHandler', () => {
 					{ id: '2', content: 'Task 2' },
 				];
 
-				mockTodoistApiGetAllRequest.mockResolvedValue([...mockApiResponse]);
+				mockTodoistApiRequest.mockResolvedValue([...mockApiResponse]);
 
 				const result = await handler.handleOperation(mockCtx, 0);
 
-				expect(mockTodoistApiGetAllRequest).toHaveBeenCalledWith(
-					mockCtx,
+				expect(mockTodoistApiRequest).toHaveBeenCalledWith(
+					'GET',
 					'/tasks',
+					{},
 					expect.objectContaining({
 						project_id: '123456',
 						label: '789',
 					}),
-					10,
 				);
+				// splice(0, 10) on a 2-element array removes and returns all 2 elements
 				expect(result).toEqual({ data: mockApiResponse });
 			});
 
@@ -239,11 +232,10 @@ describe('OperationHandler', () => {
 				});
 
 				const expectedResponse = Array.from({ length: 150 }, (_, i) => ({ id: i.toString() }));
-				mockTodoistApiGetAllRequest.mockResolvedValue(expectedResponse);
+				mockTodoistApiRequest.mockResolvedValue(expectedResponse);
 
 				const result = await handler.handleOperation(mockCtx, 0);
 
-				expect(mockTodoistApiGetAllRequest).toHaveBeenCalledWith(mockCtx, '/tasks', {}, undefined);
 				expect(result).toEqual({ data: expectedResponse });
 			});
 		});
@@ -426,11 +418,11 @@ describe('OperationHandler', () => {
 					{ id: '2', name: 'Project 2' },
 				];
 
-				mockTodoistApiGetAllRequest.mockResolvedValue(expectedResponse);
+				mockTodoistApiRequest.mockResolvedValue(expectedResponse);
 
 				const result = await handler.handleOperation(mockCtx, 0);
 
-				expect(mockTodoistApiGetAllRequest).toHaveBeenCalledWith(mockCtx, '/projects');
+				expect(mockTodoistApiRequest).toHaveBeenCalledWith('GET', '/projects');
 				expect(result).toEqual({ data: expectedResponse });
 			});
 		});
@@ -524,14 +516,11 @@ describe('OperationHandler', () => {
 					{ id: '2', name: 'User 2', email: 'user2@example.com' },
 				];
 
-				mockTodoistApiGetAllRequest.mockResolvedValue(expectedResponse);
+				mockTodoistApiRequest.mockResolvedValue(expectedResponse);
 
 				const result = await handler.handleOperation(mockCtx, 0);
 
-				expect(mockTodoistApiGetAllRequest).toHaveBeenCalledWith(
-					mockCtx,
-					'/projects/123456/collaborators',
-				);
+				expect(mockTodoistApiRequest).toHaveBeenCalledWith('GET', '/projects/123456/collaborators');
 				expect(result).toEqual({ data: expectedResponse });
 			});
 		});
@@ -609,13 +598,14 @@ describe('OperationHandler', () => {
 					{ id: '2', name: 'Section 2', project_id: '123456' },
 				];
 
-				mockTodoistApiGetAllRequest.mockResolvedValue(expectedResponse);
+				mockTodoistApiRequest.mockResolvedValue(expectedResponse);
 
 				const result = await handler.handleOperation(mockCtx, 0);
 
-				expect(mockTodoistApiGetAllRequest).toHaveBeenCalledWith(
-					mockCtx,
+				expect(mockTodoistApiRequest).toHaveBeenCalledWith(
+					'GET',
 					'/sections',
+					{},
 					expect.objectContaining({
 						project_id: '123456',
 					}),
@@ -737,11 +727,11 @@ describe('OperationHandler', () => {
 					{ id: '2', name: 'Label 2', color: 'blue' },
 				];
 
-				mockTodoistApiGetAllRequest.mockResolvedValue(expectedResponse);
+				mockTodoistApiRequest.mockResolvedValue(expectedResponse);
 
 				const result = await handler.handleOperation(mockCtx, 0);
 
-				expect(mockTodoistApiGetAllRequest).toHaveBeenCalledWith(mockCtx, '/labels');
+				expect(mockTodoistApiRequest).toHaveBeenCalledWith('GET', '/labels');
 				expect(result).toEqual({ data: expectedResponse });
 			});
 		});
@@ -860,13 +850,14 @@ describe('OperationHandler', () => {
 					{ id: '2', task_id: '123456', content: 'Comment 2' },
 				];
 
-				mockTodoistApiGetAllRequest.mockResolvedValue(expectedResponse);
+				mockTodoistApiRequest.mockResolvedValue(expectedResponse);
 
 				const result = await handler.handleOperation(mockCtx, 0);
 
-				expect(mockTodoistApiGetAllRequest).toHaveBeenCalledWith(
-					mockCtx,
+				expect(mockTodoistApiRequest).toHaveBeenCalledWith(
+					'GET',
 					'/comments',
+					{},
 					expect.objectContaining({
 						task_id: '123456',
 					}),
@@ -884,13 +875,14 @@ describe('OperationHandler', () => {
 
 				const expectedResponse = [{ id: '1', project_id: '789', content: 'Comment 1' }];
 
-				mockTodoistApiGetAllRequest.mockResolvedValue(expectedResponse);
+				mockTodoistApiRequest.mockResolvedValue(expectedResponse);
 
 				const result = await handler.handleOperation(mockCtx, 0);
 
-				expect(mockTodoistApiGetAllRequest).toHaveBeenCalledWith(
-					mockCtx,
+				expect(mockTodoistApiRequest).toHaveBeenCalledWith(
+					'GET',
 					'/comments',
+					{},
 					expect.objectContaining({
 						project_id: '789',
 					}),

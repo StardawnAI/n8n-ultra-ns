@@ -20,7 +20,6 @@ const props = withDefaults(
 		canOpenNDV?: boolean;
 		hideNodeIssues?: boolean;
 		focusOnLoad?: boolean;
-		hideControls?: boolean;
 	}>(),
 	{
 		loading: false,
@@ -33,13 +32,11 @@ const props = withDefaults(
 		canOpenNDV: true,
 		hideNodeIssues: false,
 		focusOnLoad: true,
-		hideControls: false,
 	},
 );
 
 const emit = defineEmits<{
 	close: [];
-	ready: [];
 }>();
 
 const i18n = useI18n();
@@ -55,11 +52,7 @@ const scrollX = ref(0);
 const scrollY = ref(0);
 
 const iframeSrc = computed(() => {
-	const basePath = `${window.BASE_PATH ?? '/'}workflows/demo`;
-	if (props.hideControls) {
-		return `${basePath}?hideControls=true`;
-	}
-	return basePath;
+	return `${window.BASE_PATH ?? '/'}workflows/demo`;
 });
 
 const showPreview = computed(() => {
@@ -171,8 +164,6 @@ const onReady = () => {
 			iframeRef.value?.contentWindow?.focus();
 		});
 	}
-
-	emit('ready');
 };
 
 const onOpenNDV = () => {

@@ -1,11 +1,15 @@
 <script lang="ts" setup>
 import { useI18n } from '@n8n/i18n';
+import { useTelemetry } from '@/app/composables/useTelemetry';
+import { useToast } from '@/app/composables/useToast';
+import { useCredentialsStore } from '@/features/credentials/credentials.store';
 import { useNDVStore } from '@/features/ndv/shared/ndv.store';
-import { useFreeAiCredits } from '@/app/composables/useFreeAiCredits';
+import { useProjectsStore } from '@/features/collaboration/projects/projects.store';
+import { useSettingsStore } from '@/app/stores/settings.store';
+import { useUsersStore } from '@/features/settings/users/users.store';
 import { computed, ref } from 'vue';
 import { OPEN_AI_API_CREDENTIAL_TYPE } from 'n8n-workflow';
 import { N8nButton, N8nCallout, N8nText } from '@n8n/design-system';
-
 type Props = {
 	credentialTypeName?: string;
 };
@@ -13,6 +17,7 @@ type Props = {
 const props = defineProps<Props>();
 
 const LANGCHAIN_NODES_PREFIX = '@n8n/n8n-nodes-langchain.';
+
 const N8N_NODES_PREFIX = '@n8n/n8n-nodes.';
 
 const NODES_WITH_OPEN_AI_API_CREDENTIAL = [
@@ -23,15 +28,31 @@ const NODES_WITH_OPEN_AI_API_CREDENTIAL = [
 ];
 
 const showSuccessCallout = ref(false);
+const claimingCredits = ref(false);
 
+const settingsStore = useSettingsStore();
+const credentialsStore = useCredentialsStore();
+const usersStore = useUsersStore();
 const ndvStore = useNDVStore();
-const i18n = useI18n();
+const projectsStore = useProjectsStore();
+const telemetry = useTelemetry();
 
-const { aiCreditsQuota, userCanClaimOpenAiCredits, claimingCredits, claimCredits } =
-	useFreeAiCredits();
+const i18n = useI18n();
+const toast = useToast();
+
+const userHasOpenAiCredentialAlready = computed(
+	() =>
+		!!credentialsStore.allCredentials.filter(
+			(credential) => credential.type === OPEN_AI_API_CREDENTIAL_TYPE,
+		).length,
+);
 
 const isEditingOpenAiCredential = computed(
 	() => props.credentialTypeName && props.credentialTypeName === OPEN_AI_API_CREDENTIAL_TYPE,
+);
+
+const userHasClaimedAiCreditsAlready = computed(
+	() => !!usersStore.currentUser?.settings?.userClaimedAiCredits,
 );
 
 const activeNodeHasOpenAiApiCredential = computed(
@@ -40,30 +61,49 @@ const activeNodeHasOpenAiApiCredential = computed(
 		NODES_WITH_OPEN_AI_API_CREDENTIAL.includes(ndvStore.activeNode.type),
 );
 
-const showCallout = computed(() => {
+const userCanClaimOpenAiCredits = computed(() => {
 	return (
-		userCanClaimOpenAiCredits.value &&
-		(activeNodeHasOpenAiApiCredential.value || isEditingOpenAiCredential.value)
+		settingsStore.isAiCreditsEnabled &&
+		(activeNodeHasOpenAiApiCredential.value || isEditingOpenAiCredential.value) &&
+		!userHasOpenAiCredentialAlready.value &&
+		!userHasClaimedAiCreditsAlready.value
 	);
 });
 
 const onClaimCreditsClicked = async () => {
-	const success = await claimCredits('freeAiCreditsCallout');
-	if (success) {
+	claimingCredits.value = true;
+
+	try {
+		await credentialsStore.claimFreeAiCredits(projectsStore.currentProject?.id);
+
+		if (usersStore?.currentUser?.settings) {
+			usersStore.currentUser.settings.userClaimedAiCredits = true;
+		}
+
+		telemetry.track('User claimed OpenAI credits');
+
 		showSuccessCallout.value = true;
+	} catch (e) {
+		toast.showError(
+			e,
+			i18n.baseText('freeAi.credits.showError.claim.title'),
+			i18n.baseText('freeAi.credits.showError.claim.message'),
+		);
+	} finally {
+		claimingCredits.value = false;
 	}
 };
 </script>
 <template>
 	<N8nCallout
-		v-if="showCallout && !showSuccessCallout"
+		v-if="userCanClaimOpenAiCredits && !showSuccessCallout"
 		theme="secondary"
 		icon="circle-alert"
 		class="mt-xs"
 	>
 		{{
 			i18n.baseText('freeAi.credits.callout.claim.title', {
-				interpolate: { credits: aiCreditsQuota },
+				interpolate: { credits: settingsStore.aiCreditsQuota },
 			})
 		}}
 		<template #trailingContent>
@@ -80,7 +120,7 @@ const onClaimCreditsClicked = async () => {
 		<N8nText size="small">
 			{{
 				i18n.baseText('freeAi.credits.callout.success.title.part1', {
-					interpolate: { credits: aiCreditsQuota },
+					interpolate: { credits: settingsStore.aiCreditsQuota },
 				})
 			}}
 		</N8nText>

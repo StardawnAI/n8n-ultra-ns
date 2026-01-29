@@ -1,14 +1,14 @@
-import type { RequestResponseMetadata } from '@utils/agent-execution';
+import { sleep } from 'n8n-workflow';
 import type {
 	EngineRequest,
-	EngineResponse,
 	IExecuteFunctions,
 	INodeExecutionData,
 	ISupplyDataFunctions,
+	EngineResponse,
 } from 'n8n-workflow';
-import { sleep } from 'n8n-workflow';
 
 import { buildExecutionContext, executeBatch } from './helpers';
+import type { RequestResponseMetadata } from './types';
 
 /* -----------------------------------------------------------
    Main Executor Function
@@ -79,3 +79,6 @@ export async function toolsAgentExecute(
 	// Otherwise return execution data
 	return [returnData];
 }
+
+// Re-export types for backwards compatibility
+export type { RequestResponseMetadata } from './types';

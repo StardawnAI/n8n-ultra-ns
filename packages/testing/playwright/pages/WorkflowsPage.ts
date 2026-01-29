@@ -19,12 +19,20 @@ export class WorkflowsPage extends BasePage {
 	/**
 	 * This is the new workflow button on the workflows page, visible when there are no workflows.
 	 */
-	async clickNewWorkflowButtonFromOverview() {
-		await this.clickByTestId('start-from-scratch-button');
+	async clickNewWorkflowCard() {
+		await this.clickByTestId('new-workflow-card');
 	}
 
-	async clickNewWorkflowButtonFromProject() {
-		await this.clickByTestId('add-resource-workflow');
+	getNewWorkflowCard() {
+		return this.page.getByTestId('new-workflow-card');
+	}
+
+	getEasyAiWorkflowCard() {
+		return this.page.getByTestId('easy-ai-workflow-card');
+	}
+
+	async clickEasyAiWorkflowCard() {
+		await this.clickByTestId('easy-ai-workflow-card');
 	}
 
 	async clearSearch() {
@@ -87,12 +95,6 @@ export class WorkflowsPage extends BasePage {
 		await this.getArchiveMenuItem().click();
 	}
 
-	async unpublishWorkflow(workflowItem: Locator) {
-		await workflowItem.getByTestId('workflow-card-actions').click();
-		await this.page.getByRole('menuitem', { name: 'Unpublish' }).click();
-		await this.page.getByRole('button', { name: 'Unpublish' }).click();
-	}
-
 	getFiltersButton() {
 		return this.page.getByTestId('resources-list-filters-trigger');
 	}
@@ -111,7 +113,7 @@ export class WorkflowsPage extends BasePage {
 
 	async toggleShowArchived() {
 		await this.openFilters();
-		await this.getShowArchivedCheckbox().click();
+		await this.getShowArchivedCheckbox().locator('span').nth(1).click();
 		await this.closeFilters();
 	}
 

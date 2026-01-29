@@ -153,7 +153,6 @@ export const defaultSettings: FrontendSettings = {
 	aiCredits: {
 		enabled: false,
 		credits: 0,
-		setup: false,
 	},
 	easyAIWorkflowOnboarded: false,
 	folders: {

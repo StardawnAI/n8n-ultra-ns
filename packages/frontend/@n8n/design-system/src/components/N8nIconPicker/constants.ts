@@ -4,7 +4,6 @@ export const ALL_ICON_PICKER_ICONS: IconName[] = [
 	'folder-plus',
 	'share',
 	'user-check',
-	'badge-check',
 	'check-check',
 	'circle',
 	'eye-off',

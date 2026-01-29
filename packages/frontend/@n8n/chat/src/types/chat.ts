@@ -9,7 +9,6 @@ export interface Chat {
 	messages: Ref<ChatMessage[]>;
 	currentSessionId: Ref<string | null>;
 	waitingForResponse: Ref<boolean>;
-	blockUserInput: Ref<boolean>;
 	loadPreviousSession?: () => Promise<string | undefined>;
 	startNewSession?: () => Promise<void>;
 	sendMessage: (text: string, files?: File[]) => Promise<SendMessageResponse | null>;

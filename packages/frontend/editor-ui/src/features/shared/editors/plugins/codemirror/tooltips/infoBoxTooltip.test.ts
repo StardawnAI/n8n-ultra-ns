@@ -24,54 +24,54 @@ describe('Infobox tooltips', () => {
 	});
 
 	describe('Cursor tooltips', () => {
-		test('should NOT show a tooltip for: {{ $max(1,2) }} foo|', async () => {
-			const tooltips = await cursorTooltips('{{ $max(1,2) }} foo|');
+		test('should NOT show a tooltip for: {{ $max(1,2) }} foo|', () => {
+			const tooltips = cursorTooltips('{{ $max(1,2) }} foo|');
 			expect(tooltips.length).toBe(0);
 		});
 
-		test('should NOT show a tooltip for: {{ $ma|x() }}', async () => {
-			const tooltips = await cursorTooltips('{{ $ma|x() }}');
+		test('should NOT show a tooltip for: {{ $ma|x() }}', () => {
+			const tooltips = cursorTooltips('{{ $ma|x() }}');
 			expect(tooltips.length).toBe(0);
 		});
 
-		test('should show a tooltip for: {{ $max(|) }}', async () => {
-			const tooltips = await cursorTooltips('{{ $max(|) }}');
+		test('should show a tooltip for: {{ $max(|) }}', () => {
+			const tooltips = cursorTooltips('{{ $max(|) }}');
 			expect(tooltips.length).toBe(1);
 			expect(infoBoxHeader(tooltips[0].view)).toHaveTextContent('$max(...numbers)');
 			expect(highlightedArgIndex(tooltips[0].view)).toBe(0);
 		});
 
-		test('should show a tooltip for: {{ $max(1,2,3,|) }}', async () => {
-			const tooltips = await cursorTooltips('{{ $max(1, 2|) }}');
+		test('should show a tooltip for: {{ $max(1,2,3,|) }}', () => {
+			const tooltips = cursorTooltips('{{ $max(1, 2|) }}');
 			expect(tooltips.length).toBe(1);
 			expect(infoBoxHeader(tooltips[0].view)).toHaveTextContent('$max(...numbers)');
 			expect(highlightedArgIndex(tooltips[0].view)).toBe(0);
 		});
 
-		test('should NOT show a tooltip for: {{ $json.str|.includes("test") }}', async () => {
-			const tooltips = await cursorTooltips('{{ $json.str|.includes("test") }}');
+		test('should NOT show a tooltip for: {{ $json.str|.includes("test") }}', () => {
+			const tooltips = cursorTooltips('{{ $json.str|.includes("test") }}');
 			expect(tooltips.length).toBe(0);
 		});
 
-		test('should show a tooltip for: {{ $json.str.includes(|) }}', async () => {
-			vi.spyOn(workflowHelpers, 'resolveParameter').mockResolvedValue('a string');
-			const tooltips = await cursorTooltips('{{ $json.str.includes(|) }}');
+		test('should show a tooltip for: {{ $json.str.includes(|) }}', () => {
+			vi.spyOn(workflowHelpers, 'resolveParameter').mockReturnValue('a string');
+			const tooltips = cursorTooltips('{{ $json.str.includes(|) }}');
 			expect(tooltips.length).toBe(1);
 			expect(infoBoxHeader(tooltips[0].view)).toHaveTextContent('includes(searchString, start?)');
 			expect(highlightedArgIndex(tooltips[0].view)).toBe(0);
 		});
 
-		test('should show a tooltip for: {{ $json.str.includes("tes|t") }}', async () => {
-			vi.spyOn(workflowHelpers, 'resolveParameter').mockResolvedValue('a string');
-			const tooltips = await cursorTooltips('{{ $json.str.includes("tes|t") }}');
+		test('should show a tooltip for: {{ $json.str.includes("tes|t") }}', () => {
+			vi.spyOn(workflowHelpers, 'resolveParameter').mockReturnValue('a string');
+			const tooltips = cursorTooltips('{{ $json.str.includes("tes|t") }}');
 			expect(tooltips.length).toBe(1);
 			expect(infoBoxHeader(tooltips[0].view)).toHaveTextContent('includes(searchString, start?)');
 			expect(highlightedArgIndex(tooltips[0].view)).toBe(0);
 		});
 
-		test('should show a tooltip for: {{ $json.str.includes("test",|) }}', async () => {
-			vi.spyOn(workflowHelpers, 'resolveParameter').mockResolvedValue('a string');
-			const tooltips = await cursorTooltips('{{ $json.str.includes("test",|) }}');
+		test('should show a tooltip for: {{ $json.str.includes("test",|) }}', () => {
+			vi.spyOn(workflowHelpers, 'resolveParameter').mockReturnValue('a string');
+			const tooltips = cursorTooltips('{{ $json.str.includes("test",|) }}');
 			expect(tooltips.length).toBe(1);
 			expect(infoBoxHeader(tooltips[0].view)).toHaveTextContent('includes(searchString, start?)');
 			expect(highlightedArgIndex(tooltips[0].view)).toBe(1);
@@ -79,41 +79,41 @@ describe('Infobox tooltips', () => {
 	});
 
 	describe('Hover tooltips', () => {
-		test('should NOT show a tooltip for: {{ $max(1,2) }} foo|', async () => {
-			const tooltip = await hoverTooltip('{{ $max(1,2) }} foo|');
+		test('should NOT show a tooltip for: {{ $max(1,2) }} foo|', () => {
+			const tooltip = hoverTooltip('{{ $max(1,2) }} foo|');
 			expect(tooltip).toBeNull();
 		});
 
-		test('should show a tooltip for: {{ $jso|n }}', async () => {
-			const tooltip = await hoverTooltip('{{ $jso|n }}');
+		test('should show a tooltip for: {{ $jso|n }}', () => {
+			const tooltip = hoverTooltip('{{ $jso|n }}');
 			expect(tooltip).not.toBeNull();
 			expect(infoBoxHeader(tooltip?.view)).toHaveTextContent('$json');
 		});
 
-		test('should show a tooltip for: {{ $execution.mo|de }}', async () => {
-			vi.spyOn(workflowHelpers, 'resolveParameter').mockResolvedValue({ mode: 'foo' });
-			const tooltip = await hoverTooltip('{{ $execution.mo|de }}');
+		test('should show a tooltip for: {{ $execution.mo|de }}', () => {
+			vi.spyOn(workflowHelpers, 'resolveParameter').mockReturnValue({ mode: 'foo' });
+			const tooltip = hoverTooltip('{{ $execution.mo|de }}');
 			expect(tooltip).not.toBeNull();
 			expect(infoBoxHeader(tooltip?.view)).toHaveTextContent('mode');
 		});
 
-		test('should show a tooltip for: {{ $jmespa|th() }}', async () => {
-			const tooltip = await hoverTooltip('{{ $jmespa|th() }}');
+		test('should show a tooltip for: {{ $jmespa|th() }}', () => {
+			const tooltip = hoverTooltip('{{ $jmespa|th() }}');
 			expect(tooltip).not.toBeNull();
 			expect(infoBoxHeader(tooltip?.view)).toHaveTextContent('$jmespath(obj, expression)');
 		});
 
-		test('should show a tooltip for: {{ $json.str.includ|es() }}', async () => {
-			vi.spyOn(workflowHelpers, 'resolveParameter').mockResolvedValue('foo');
-			const tooltip = await hoverTooltip('{{ $json.str.includ|es() }}');
+		test('should show a tooltip for: {{ $json.str.includ|es() }}', () => {
+			vi.spyOn(workflowHelpers, 'resolveParameter').mockReturnValue('foo');
+			const tooltip = hoverTooltip('{{ $json.str.includ|es() }}');
 			expect(tooltip).not.toBeNull();
 			expect(infoBoxHeader(tooltip?.view)).toHaveTextContent('includes(searchString, start?)');
 		});
 
-		test('should not show a tooltip when autocomplete is open', async () => {
-			vi.spyOn(workflowHelpers, 'resolveParameter').mockResolvedValue('foo');
+		test('should not show a tooltip when autocomplete is open', () => {
+			vi.spyOn(workflowHelpers, 'resolveParameter').mockReturnValue('foo');
 			vi.mocked(completionStatus).mockReturnValue('active');
-			const tooltip = await hoverTooltip('{{ $json.str.includ|es() }}');
+			const tooltip = hoverTooltip('{{ $json.str.includ|es() }}');
 			expect(tooltip).toBeNull();
 		});
 	});
@@ -129,7 +129,7 @@ function infoBoxHeader(infoBox: HTMLElement | undefined) {
 	return infoBox?.querySelector('.autocomplete-info-header');
 }
 
-async function cursorTooltips(docWithCursor: string) {
+function cursorTooltips(docWithCursor: string) {
 	const cursorPosition = docWithCursor.indexOf('|');
 
 	const doc = docWithCursor.slice(0, cursorPosition) + docWithCursor.slice(cursorPosition + 1);
@@ -141,21 +141,13 @@ async function cursorTooltips(docWithCursor: string) {
 	});
 	const view = new EditorView({ parent: document.createElement('div'), state });
 
-	// Wait for async tooltip loading to complete
-	// The async loader runs on initial create, so we need to wait for it
-	await new Promise((resolve) => setTimeout(resolve, 50));
-
-	// Force a state read to ensure any pending updates are processed
-	view.requestMeasure();
-	await new Promise((resolve) => setTimeout(resolve, 10));
-
-	return view.state
+	return state
 		.facet(showTooltip)
 		.filter((t): t is Tooltip => !!t)
 		.map((tooltip) => ({ tooltip, view: getTooltip(view, tooltip)?.dom }));
 }
 
-async function hoverTooltip(docWithCursor: string) {
+function hoverTooltip(docWithCursor: string) {
 	const hoverPosition = docWithCursor.indexOf('|');
 
 	const doc = docWithCursor.slice(0, hoverPosition) + docWithCursor.slice(hoverPosition + 1);
@@ -167,7 +159,7 @@ async function hoverTooltip(docWithCursor: string) {
 
 	const view = new EditorView({ state, parent: document.createElement('div') });
 
-	const tooltip = await hoverTooltipSource(view, hoverPosition);
+	const tooltip = hoverTooltipSource(view, hoverPosition);
 
 	if (!tooltip) {
 		return null;

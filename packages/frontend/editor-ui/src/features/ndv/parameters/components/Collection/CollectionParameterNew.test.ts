@@ -6,7 +6,6 @@ import { createTestingPinia } from '@pinia/testing';
 import userEvent from '@testing-library/user-event';
 import { setActivePinia } from 'pinia';
 import { nextTick } from 'vue';
-import { flushPromises } from '@vue/test-utils';
 
 describe('CollectionParameterNew.vue', () => {
 	const pinia = createTestingPinia({
@@ -17,10 +16,6 @@ describe('CollectionParameterNew.vue', () => {
 		},
 	});
 	setActivePinia(pinia);
-
-	afterEach(async () => {
-		await flushPromises();
-	});
 
 	const baseProps: Props = {
 		parameter: {
@@ -101,8 +96,8 @@ describe('CollectionParameterNew.vue', () => {
 	});
 
 	describe('Collections with values', () => {
-		it('renders parameters from collection items', async () => {
-			const { findByText } = renderComponent({
+		it('renders parameters from collection items', () => {
+			const { getByText } = renderComponent({
 				props: {
 					...baseProps,
 					values: {
@@ -118,11 +113,11 @@ describe('CollectionParameterNew.vue', () => {
 				},
 			});
 
-			expect(await findByText('Value 1')).toBeInTheDocument();
+			expect(getByText('Value 1')).toBeInTheDocument();
 		});
 
-		it('renders parameters from multiple collections correctly', async () => {
-			const { findByText } = renderComponent({
+		it('renders parameters from multiple collections correctly', () => {
+			const { getByText } = renderComponent({
 				props: {
 					...baseProps,
 					values: {
@@ -140,8 +135,8 @@ describe('CollectionParameterNew.vue', () => {
 				},
 			});
 
-			expect(await findByText('Value 1')).toBeInTheDocument();
-			expect(await findByText('Value 2')).toBeInTheDocument();
+			expect(getByText('Value 1')).toBeInTheDocument();
+			expect(getByText('Value 2')).toBeInTheDocument();
 		});
 	});
 
@@ -173,8 +168,8 @@ describe('CollectionParameterNew.vue', () => {
 	});
 
 	describe('Deleting items', () => {
-		it('renders collection parameters correctly', async () => {
-			const { findByText, getAllByRole } = renderComponent({
+		it('renders collection parameters correctly', () => {
+			const { getByText, getAllByRole } = renderComponent({
 				props: {
 					...baseProps,
 					values: {
@@ -190,7 +185,7 @@ describe('CollectionParameterNew.vue', () => {
 				},
 			});
 
-			expect(await findByText('Value 1')).toBeInTheDocument();
+			expect(getByText('Value 1')).toBeInTheDocument();
 			const buttons = getAllByRole('button');
 			expect(buttons.length).toBeGreaterThan(0);
 		});
@@ -209,8 +204,8 @@ describe('CollectionParameterNew.vue', () => {
 			expect(queryByTestId('collection-parameter-add-dropdown')).not.toBeInTheDocument();
 		});
 
-		it('renders parameters in read-only mode', async () => {
-			const { findByText } = renderComponent({
+		it('renders parameters in read-only mode', () => {
+			const { getByText } = renderComponent({
 				props: {
 					...baseProps,
 					isReadOnly: true,
@@ -228,13 +223,13 @@ describe('CollectionParameterNew.vue', () => {
 			});
 
 			// Verify the parameter is rendered
-			expect(await findByText('Value 1')).toBeInTheDocument();
+			expect(getByText('Value 1')).toBeInTheDocument();
 		});
 	});
 
 	describe('Sortable collections', () => {
-		it('renders parameters when sortable and multiple items exist', async () => {
-			const { findByText } = renderComponent({
+		it('renders parameters when sortable and multiple items exist', () => {
+			const { getByText } = renderComponent({
 				props: {
 					...baseProps,
 					parameter: {
@@ -259,12 +254,12 @@ describe('CollectionParameterNew.vue', () => {
 			});
 
 			// Verify parameters from collections are rendered
-			expect(await findByText('Value 1')).toBeInTheDocument();
-			expect(await findByText('Value 2')).toBeInTheDocument();
+			expect(getByText('Value 1')).toBeInTheDocument();
+			expect(getByText('Value 2')).toBeInTheDocument();
 		});
 
-		it('respects sortable: false option', async () => {
-			const { findByText } = renderComponent({
+		it('respects sortable: false option', () => {
+			const { getByText } = renderComponent({
 				props: {
 					...baseProps,
 					parameter: {
@@ -286,13 +281,13 @@ describe('CollectionParameterNew.vue', () => {
 				},
 			});
 
-			expect(await findByText('Value 1')).toBeInTheDocument();
+			expect(getByText('Value 1')).toBeInTheDocument();
 		});
 	});
 
 	describe('Expanded state', () => {
-		it('renders collection parameters', async () => {
-			const { findByText } = renderComponent({
+		it('renders collection parameters', () => {
+			const { getByText } = renderComponent({
 				props: {
 					...baseProps,
 					values: {
@@ -309,7 +304,7 @@ describe('CollectionParameterNew.vue', () => {
 			});
 
 			// Verify parameter is rendered
-			expect(await findByText('Value 1')).toBeInTheDocument();
+			expect(getByText('Value 1')).toBeInTheDocument();
 		});
 	});
 

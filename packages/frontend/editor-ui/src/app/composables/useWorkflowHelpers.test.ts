@@ -9,14 +9,12 @@ import { useWorkflowsEEStore } from '@/app/stores/workflows.ee.store';
 import { useTagsStore } from '@/features/shared/tags/tags.store';
 import { useUIStore } from '@/app/stores/ui.store';
 import {
-	createMockNodeTypes,
 	createTestExpressionLocalResolveContext,
 	createTestNode,
 	createTestTaskData,
 	createTestWorkflow,
 	createTestWorkflowExecutionResponse,
 	createTestWorkflowObject,
-	mockLoadedNodeType,
 } from '@/__tests__/mocks';
 import {
 	CHAT_TRIGGER_NODE_TYPE,
@@ -27,7 +25,7 @@ import {
 import type { AssignmentCollectionValue, IConnections } from 'n8n-workflow';
 import * as apiWebhooks from '@n8n/rest-api-client/api/webhooks';
 import { mockedStore } from '@/__tests__/utils';
-import { SLACK_TRIGGER_NODE_TYPE, SET_NODE_TYPE } from '../constants';
+import { SLACK_TRIGGER_NODE_TYPE } from '../constants';
 import {
 	injectWorkflowState,
 	useWorkflowState,
@@ -66,7 +64,7 @@ describe('useWorkflowHelpers', () => {
 	});
 
 	describe('getNodeParametersWithResolvedExpressions', () => {
-		it('should correctly detect and resolve expressions in a regular node ', async () => {
+		it('should correctly detect and resolve expressions in a regular node ', () => {
 			const nodeParameters = {
 				curlImport: '',
 				method: 'GET',
@@ -81,11 +79,11 @@ describe('useWorkflowHelpers', () => {
 			};
 			const workflowHelpers = useWorkflowHelpers();
 			const resolvedParameters =
-				await workflowHelpers.getNodeParametersWithResolvedExpressions(nodeParameters);
+				workflowHelpers.getNodeParametersWithResolvedExpressions(nodeParameters);
 			expect(resolvedParameters.url).toHaveProperty('resolvedExpressionValue');
 		});
 
-		it('should correctly detect and resolve expressions in a node with assignments (set node) ', async () => {
+		it('should correctly detect and resolve expressions in a node with assignments (set node) ', () => {
 			const nodeParameters = {
 				mode: 'manual',
 				duplicateItem: false,
@@ -105,14 +103,14 @@ describe('useWorkflowHelpers', () => {
 			};
 			const workflowHelpers = useWorkflowHelpers();
 			const resolvedParameters =
-				await workflowHelpers.getNodeParametersWithResolvedExpressions(nodeParameters);
+				workflowHelpers.getNodeParametersWithResolvedExpressions(nodeParameters);
 			expect(resolvedParameters).toHaveProperty('assignments');
 			const assignments = resolvedParameters.assignments as AssignmentCollectionValue;
 			expect(assignments).toHaveProperty('assignments');
 			expect(assignments.assignments[0].value).toHaveProperty('resolvedExpressionValue');
 		});
 
-		it('should correctly detect and resolve expressions in a node with filter component', async () => {
+		it('should correctly detect and resolve expressions in a node with filter component', () => {
 			const nodeParameters = {
 				mode: 'rules',
 				rules: {
@@ -145,16 +143,16 @@ describe('useWorkflowHelpers', () => {
 				options: {},
 			};
 			const workflowHelpers = useWorkflowHelpers();
-			const resolvedParameters = (await workflowHelpers.getNodeParametersWithResolvedExpressions(
+			const resolvedParameters = workflowHelpers.getNodeParametersWithResolvedExpressions(
 				nodeParameters,
-			)) as typeof nodeParameters;
+			) as typeof nodeParameters;
 			expect(resolvedParameters).toHaveProperty('rules');
 			expect(resolvedParameters.rules).toHaveProperty('values');
 			expect(resolvedParameters.rules.values[0].conditions.conditions[0].leftValue).toHaveProperty(
 				'resolvedExpressionValue',
 			);
 		});
-		it('should correctly detect and resolve expressions in a node with resource locator component', async () => {
+		it('should correctly detect and resolve expressions in a node with resource locator component', () => {
 			const nodeParameters = {
 				authentication: 'oAuth2',
 				resource: 'sheet',
@@ -174,13 +172,13 @@ describe('useWorkflowHelpers', () => {
 				options: {},
 			};
 			const workflowHelpers = useWorkflowHelpers();
-			const resolvedParameters = (await workflowHelpers.getNodeParametersWithResolvedExpressions(
+			const resolvedParameters = workflowHelpers.getNodeParametersWithResolvedExpressions(
 				nodeParameters,
-			)) as typeof nodeParameters;
+			) as typeof nodeParameters;
 			expect(resolvedParameters.documentId.value).toHaveProperty('resolvedExpressionValue');
 			expect(resolvedParameters.sheetName.value).toHaveProperty('resolvedExpressionValue');
 		});
-		it('should correctly detect and resolve expressions in a node with resource mapper component', async () => {
+		it('should correctly detect and resolve expressions in a node with resource mapper component', () => {
 			const nodeParameters = {
 				authentication: 'oAuth2',
 				resource: 'sheet',
@@ -213,9 +211,9 @@ describe('useWorkflowHelpers', () => {
 				options: {},
 			};
 			const workflowHelpers = useWorkflowHelpers();
-			const resolvedParameters = (await workflowHelpers.getNodeParametersWithResolvedExpressions(
+			const resolvedParameters = workflowHelpers.getNodeParametersWithResolvedExpressions(
 				nodeParameters,
-			)) as typeof nodeParameters;
+			) as typeof nodeParameters;
 			expect(resolvedParameters.filtersUI.values[0].lookupValue).toHaveProperty(
 				'resolvedExpressionValue',
 			);
@@ -1101,8 +1099,8 @@ describe('useWorkflowHelpers', () => {
 
 describe(resolveParameter, () => {
 	describe('with local resolve context', () => {
-		it('should resolve parameter without execution data', async () => {
-			const result = await resolveParameter(
+		it('should resolve parameter without execution data', () => {
+			const result = resolveParameter(
 				{
 					f0: '={{ 2 + 2 }}',
 					f1: '={{ $vars.foo }}',
@@ -1127,7 +1125,7 @@ describe(resolveParameter, () => {
 			expect(result).toEqual({ f0: 4, f1: 'hello!', f2: 'TRUE' });
 		});
 
-		it('should resolve parameter with execution data', async () => {
+		it('should resolve parameter with execution data', () => {
 			const workflowData = createTestWorkflow({
 				nodes: [createTestNode({ name: 'n0' }), createTestNode({ name: 'n1' })],
 				connections: {
@@ -1138,7 +1136,7 @@ describe(resolveParameter, () => {
 					},
 				},
 			});
-			const result = await resolveParameter(
+			const result = resolveParameter(
 				{
 					f0: '={{ $json }}',
 					f1: '={{ $("n0").item.json }}',
@@ -1168,102 +1166,6 @@ describe(resolveParameter, () => {
 				f0: { foo: 777 },
 				f1: { foo: 777 },
 			});
-		});
-
-		it('should include $tool in additionalKeys for hitl tool node types', async () => {
-			const toolNodeType = 'n8n-nodes-base.someHitlTool';
-			const toolNodeTypes = createMockNodeTypes({
-				[toolNodeType]: mockLoadedNodeType(toolNodeType),
-			});
-
-			const result = await resolveParameter(
-				{
-					toolName: '={{ $tool.name }}',
-					toolParams: '={{ $tool.parameters }}',
-				},
-				{
-					localResolve: true,
-					workflow: createTestWorkflowObject({
-						nodes: [createTestNode({ name: 'toolNode', type: toolNodeType })],
-						nodeTypes: toolNodeTypes,
-					}),
-					execution: null,
-					nodeName: 'toolNode',
-					additionalKeys: {},
-				},
-			);
-
-			expect(result?.toolName).toBeDefined();
-			expect(result?.toolParams).toBeDefined();
-		});
-
-		it('should not include $tool in additionalKeys for non-tool node types', async () => {
-			const result = await resolveParameter(
-				{
-					toolCheck: '={{ $tool }}',
-				},
-				{
-					localResolve: true,
-					workflow: createTestWorkflowObject({
-						nodes: [createTestNode({ name: 'regularNode', type: SET_NODE_TYPE })],
-					}),
-					execution: null,
-					nodeName: 'regularNode',
-					additionalKeys: {},
-				},
-			);
-
-			expect(result?.toolCheck).toBeUndefined();
-		});
-
-		it('should resolve $tool.name expression for tool nodes', async () => {
-			const toolNodeType = 'n8n-nodes-base.someHitlTool';
-			const toolNodeTypes = createMockNodeTypes({
-				[toolNodeType]: mockLoadedNodeType(toolNodeType),
-			});
-
-			const result = await resolveParameter(
-				{
-					message: '={{ "The agent wants to call " + $tool.name }}',
-				},
-				{
-					localResolve: true,
-					workflow: createTestWorkflowObject({
-						nodes: [createTestNode({ name: 'hitlTool', type: toolNodeType })],
-						nodeTypes: toolNodeTypes,
-					}),
-					execution: null,
-					nodeName: 'hitlTool',
-					additionalKeys: {},
-				},
-			);
-
-			expect(result?.message).toContain('The agent wants to call');
-		});
-
-		it('should resolve $tool.parameters expression for hitl tool nodes', async () => {
-			const toolNodeType = 'n8n-nodes-base.someHitlTool';
-			const toolNodeTypes = createMockNodeTypes({
-				[toolNodeType]: mockLoadedNodeType(toolNodeType),
-			});
-
-			const result = await resolveParameter(
-				{
-					params: '={{ $tool.parameters }}',
-				},
-				{
-					localResolve: true,
-					workflow: createTestWorkflowObject({
-						nodes: [createTestNode({ name: 'someTool', type: toolNodeType })],
-						nodeTypes: toolNodeTypes,
-					}),
-					execution: null,
-					nodeName: 'someTool',
-					additionalKeys: {},
-				},
-			);
-
-			expect(result?.params).toBeDefined();
 		});
 	});
 });

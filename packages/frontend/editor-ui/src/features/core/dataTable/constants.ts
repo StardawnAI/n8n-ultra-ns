@@ -36,7 +36,6 @@ export const MIN_LOADING_TIME = 500; // ms
 
 export const NULL_VALUE = 'Null';
 export const EMPTY_VALUE = 'Empty';
-export const MAX_CELL_DISPLAY_LENGTH = 10000;
 
 export const DATA_TABLE_MODULE_NAME = 'data-table';
 

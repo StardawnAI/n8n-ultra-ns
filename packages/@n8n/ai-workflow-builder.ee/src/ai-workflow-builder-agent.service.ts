@@ -12,7 +12,6 @@ import type { IUser, INodeTypeDescription, ITelemetryTrackProperties } from 'n8n
 import { LLMServiceError } from '@/errors';
 import { anthropicClaudeSonnet45 } from '@/llm-config';
 import { SessionManagerService } from '@/session-manager.service';
-import { ResourceLocatorCallbackFactory } from '@/types/callbacks';
 import {
 	BuilderFeatureFlags,
 	WorkflowBuilderAgent,
@@ -37,7 +36,6 @@ export class AiWorkflowBuilderService {
 		private readonly n8nVersion?: string,
 		private readonly onCreditsUpdated?: OnCreditsUpdated,
 		private readonly onTelemetryEvent?: OnTelemetryEvent,
-		private readonly resourceLocatorCallbackFactory?: ResourceLocatorCallbackFactory,
 	) {
 		this.parsedNodeTypes = this.filterNodeTypes(parsedNodeTypes);
 		this.sessionManager = new SessionManagerService(this.parsedNodeTypes, logger);
@@ -169,35 +167,27 @@ export class AiWorkflowBuilderService {
 			userMessageId,
 		);
 
-		// Create resource locator callback scoped to this user if factory is provided
-		const resourceLocatorCallback = this.resourceLocatorCallbackFactory?.(user.id);
-
 		const agent = new WorkflowBuilderAgent({
 			parsedNodeTypes: this.parsedNodeTypes,
-			// Use the same model for all stages in production
-			stageLLMs: {
-				supervisor: anthropicClaude,
-				responder: anthropicClaude,
-				discovery: anthropicClaude,
-				builder: anthropicClaude,
-				configurator: anthropicClaude,
-				parameterUpdater: anthropicClaude,
-			},
+			// We use Sonnet both for simple and complex tasks
+			llmSimpleTask: anthropicClaude,
+			llmComplexTask: anthropicClaude,
 			logger: this.logger,
 			checkpointer: this.sessionManager.getCheckpointer(),
 			tracer: tracingClient
 				? new LangChainTracer({ client: tracingClient, projectName: 'n8n-workflow-builder' })
 				: undefined,
 			instanceUrl: this.instanceUrl,
+			onGenerationSuccess: async () => {
+				await this.onGenerationSuccess(user, authHeaders);
+			},
 			runMetadata: {
 				n8nVersion: this.n8nVersion,
 				featureFlags: featureFlags ?? {},
 			},
-			onGenerationSuccess: async () => await this.onGenerationSuccess(user, authHeaders),
-			resourceLocatorCallback,
 		});
 
-		return { agent };
+		return agent;
 	}
 
 	private async onGenerationSuccess(
@@ -224,7 +214,7 @@ export class AiWorkflowBuilderService {
 	}
 
 	async *chat(payload: ChatPayload, user: IUser, abortSignal?: AbortSignal) {
-		const { agent } = await this.getAgent(user, payload.id, payload.featureFlags);
+		const agent = await this.getAgent(user, payload.id, payload.featureFlags);
 		const userId = user?.id?.toString();
 		const workflowId = payload.workflowContext?.currentWorkflow?.id;
 
@@ -232,7 +222,7 @@ export class AiWorkflowBuilderService {
 			yield output;
 		}
 
-		// Track telemetry after stream completes (onGenerationSuccess is called by the agent)
+		// After the stream completes, track telemetry
 		if (this.onTelemetryEvent && userId) {
 			try {
 				await this.trackBuilderReplyTelemetry(agent, workflowId, userId, payload.id);

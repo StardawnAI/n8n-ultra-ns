@@ -16,7 +16,6 @@ import { getTracingConfig } from '@utils/tracing';
 import { formatToOpenAIAssistantTool } from './utils';
 import { Container } from '@n8n/di';
 import { AiConfig } from '@n8n/config';
-import { checkDomainRestrictions } from '@utils/checkDomainRestrictions';
 
 export class OpenAiAssistant implements INodeType {
 	description: INodeTypeDescription = {
@@ -343,10 +342,6 @@ export class OpenAiAssistant implements INodeType {
 				}
 
 				const { openAiDefaultHeaders: defaultHeaders } = Container.get(AiConfig);
-
-				if (options.baseURL) {
-					checkDomainRestrictions(this, credentials, options.baseURL);
-				}
 
 				const client = new OpenAIClient({
 					apiKey: credentials.apiKey as string,

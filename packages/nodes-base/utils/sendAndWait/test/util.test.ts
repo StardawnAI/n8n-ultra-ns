@@ -1,10 +1,5 @@
 import { type MockProxy, mock } from 'jest-mock-extended';
-import type {
-	IExecuteFunctions,
-	INodeProperties,
-	IWebhookFunctions,
-	IWorkflowSettings,
-} from 'n8n-workflow';
+import type { IExecuteFunctions, INodeProperties, IWebhookFunctions } from 'n8n-workflow';
 import { NodeOperationError, WAIT_INDEFINITELY } from 'n8n-workflow';
 
 import { configureWaitTillDate } from '../configureWaitTillDate.util';
@@ -22,7 +17,6 @@ describe('Send and Wait utils tests', () => {
 	beforeEach(() => {
 		mockExecuteFunctions = mock<IExecuteFunctions>();
 		mockWebhookFunctions = mock<IWebhookFunctions>();
-		mockWebhookFunctions.getWorkflowSettings.mockReturnValue(mock<IWorkflowSettings>({}));
 	});
 
 	describe('getSendAndWaitProperties', () => {
@@ -35,53 +29,9 @@ describe('Send and Wait utils tests', () => {
 					default: '',
 				},
 			];
-			const extraOptions: INodeProperties[] = [
-				{
-					displayName: 'Extra Property',
-					name: 'extraProperty',
-					type: 'string',
-					default: '',
-				},
-			];
 
-			const result = getSendAndWaitProperties(targetProperties, undefined, undefined, {
-				extraOptions,
-			});
+			const result = getSendAndWaitProperties(targetProperties);
 
-			expect(result).toEqual(
-				expect.arrayContaining([
-					expect.objectContaining({
-						name: 'options',
-						options: expect.arrayContaining([
-							expect.objectContaining({
-								name: 'extraProperty',
-							}),
-						]),
-					}),
-				]),
-			);
-		});
-
-		it('should include extra options when provided', () => {
-			const targetProperties: INodeProperties[] = [
-				{
-					displayName: 'Test Property',
-					name: 'testProperty',
-					type: 'string',
-					default: '',
-				},
-			];
-			const extraOptions: INodeProperties[] = [
-				{
-					displayName: 'Extra Property',
-					name: 'extraProperty',
-					type: 'string',
-					default: '',
-				},
-			];
-			const result = getSendAndWaitProperties(targetProperties, undefined, undefined, {
-				extraOptions,
-			});
 			expect(result).toEqual(
 				expect.arrayContaining([
 					expect.objectContaining({

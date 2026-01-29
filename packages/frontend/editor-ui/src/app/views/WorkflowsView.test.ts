@@ -110,10 +110,6 @@ describe('WorkflowsView', () => {
 		foldersStore.totalWorkflowCount = 0;
 		foldersStore.fetchTotalWorkflowsAndFoldersCount.mockResolvedValue(0);
 
-		// Mock getSimplifiedLayoutVisibility to return false so ResourcesListLayout is used
-		const readyToRunStore = mockedStore(useReadyToRunStore);
-		vi.spyOn(readyToRunStore, 'getSimplifiedLayoutVisibility').mockReturnValue(false);
-
 		projectPages = useProjectPages();
 	});
 
@@ -131,7 +127,7 @@ describe('WorkflowsView', () => {
 			const { getByText } = renderComponent({ pinia });
 			await waitAllPromises();
 
-			expect(getByText('👋 Welcome, John!')).toBeVisible();
+			expect(getByText('👋 Welcome John!')).toBeVisible();
 		});
 
 		describe('when onboardingExperiment -> False', () => {
@@ -160,6 +156,20 @@ describe('WorkflowsView', () => {
 				await waitAllPromises();
 				expect(getByText('Create your first workflow')).toBeInTheDocument();
 			});
+		});
+
+		it('should allow workflow creation', async () => {
+			const projectsStore = mockedStore(useProjectsStore);
+			projectsStore.currentProject = { scopes: ['workflow:create'] } as Project;
+
+			const { getByTestId } = renderComponent({ pinia });
+			await waitAllPromises();
+
+			expect(getByTestId('new-workflow-card')).toBeInTheDocument();
+
+			await userEvent.click(getByTestId('new-workflow-card'));
+
+			expect(router.currentRoute.value.name).toBe(VIEWS.NEW_WORKFLOW);
 		});
 	});
 
@@ -531,31 +541,18 @@ describe('Simplified Layout', () => {
 		const projectsStore = mockedStore(useProjectsStore);
 
 		vi.spyOn(readyToRunStore, 'getSimplifiedLayoutVisibility').mockReturnValue(true);
+		vi.spyOn(readyToRunStore, 'getCardVisibility').mockReturnValue(true);
 		projectsStore.currentProject = { scopes: ['workflow:create'] } as Project;
 
-		const { queryByTestId } = renderComponent({ pinia });
+		const { getByTestId, queryByTestId } = renderComponent({ pinia });
 		await waitAllPromises();
 
-		// ResourcesListLayout should NOT be rendered when simplified layout is enabled
+		// EmptyStateLayout cards should be rendered
+		expect(getByTestId('new-workflow-card')).toBeInTheDocument();
+		expect(getByTestId('ready-to-run-card')).toBeInTheDocument();
+
+		// ResourcesListLayout should NOT be rendered
 		expect(queryByTestId('resources-list-wrapper')).not.toBeInTheDocument();
-	});
-
-	it('should navigate to new workflow when Create workflow card is clicked', async () => {
-		const readyToRunStore = mockedStore(useReadyToRunStore);
-		const projectsStore = mockedStore(useProjectsStore);
-
-		vi.spyOn(readyToRunStore, 'getSimplifiedLayoutVisibility').mockReturnValue(true);
-		projectsStore.currentProject = { scopes: ['workflow:create'] } as Project;
-
-		const { getByTestId } = renderComponent({ pinia });
-		await waitAllPromises();
-
-		const createWorkflowCard = getByTestId('new-workflow-card');
-		expect(createWorkflowCard).toBeInTheDocument();
-
-		await userEvent.click(createWorkflowCard);
-
-		expect(router.currentRoute.value.name).toBe(VIEWS.NEW_WORKFLOW);
 	});
 
 	it('should render ResourcesListLayout when simplified layout is disabled', async () => {
@@ -583,6 +580,27 @@ describe('Simplified Layout', () => {
 		expect(getSimplifiedLayoutVisibility).toHaveBeenCalled();
 		const callArgs = getSimplifiedLayoutVisibility.mock.calls[0];
 		expect(callArgs[0]).toBeDefined(); // route
+	});
+
+	it('should call addWorkflow when EmptyStateLayout new workflow card is clicked', async () => {
+		const readyToRunStore = mockedStore(useReadyToRunStore);
+		const projectsStore = mockedStore(useProjectsStore);
+		projectsStore.currentProject = { id: 'project-123', scopes: ['workflow:create'] } as Project;
+
+		vi.spyOn(readyToRunStore, 'getSimplifiedLayoutVisibility').mockReturnValue(true);
+		vi.spyOn(readyToRunStore, 'getCardVisibility').mockReturnValue(true);
+
+		const { getByTestId } = renderComponent({ pinia });
+		await waitAllPromises();
+
+		const newWorkflowCard = getByTestId('new-workflow-card');
+		expect(newWorkflowCard).toBeInTheDocument();
+
+		// Click the new workflow card
+		await userEvent.click(newWorkflowCard);
+
+		// Should navigate to new workflow view
+		expect(router.currentRoute.value.name).toBe(VIEWS.NEW_WORKFLOW);
 	});
 
 	it('should pass route and loading state reactively to getSimplifiedLayoutVisibility', async () => {

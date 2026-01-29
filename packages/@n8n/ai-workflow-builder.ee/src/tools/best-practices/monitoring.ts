@@ -19,7 +19,9 @@ Example pattern for website monitoring:
 
 For monitoring multiple services, store URLs/endpoints in Google Sheets or databases and loop through them rather than duplicating workflows.
 
-## Scheduling
+## Scheduling & Activation
+
+Always activate the workflow after configuration - forgetting this means no monitoring occurs. Test schedules with manual execution before relying on them in production.
 
 Configure appropriate check intervals based on criticality:
 - Critical services: 1-5 minutes
@@ -85,6 +87,7 @@ Purpose: Periodic workflow execution at fixed intervals or Cron schedules
 
 Configuration:
 - Set appropriate intervals based on service criticality
+- Always activate the workflow after configuration
 
 ### HTTP Request (n8n-nodes-base.httpRequest)
 
@@ -135,6 +138,10 @@ Purpose: Store monitoring configuration, log results, track state changes
 Purpose: Modular monitoring design with sub-workflows for different service types
 
 ## Common Pitfalls to Avoid
+
+### Forgetting to Activate Workflow
+
+The #1 monitoring failure - creating the perfect monitoring workflow but forgetting to activate it. Always verify the workflow is active (toggle in top-right of editor).
 
 ### No Error Handling on Check Nodes
 

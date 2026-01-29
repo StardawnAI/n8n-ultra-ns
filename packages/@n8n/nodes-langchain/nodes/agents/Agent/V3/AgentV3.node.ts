@@ -9,7 +9,6 @@ import type {
 	EngineRequest,
 } from 'n8n-workflow';
 
-import type { RequestResponseMetadata } from '@utils/agent-execution';
 import {
 	promptTypeOptions,
 	promptTypeOptionsDeprecated,
@@ -19,6 +18,7 @@ import {
 } from '@utils/descriptions';
 
 import { toolsAgentProperties } from '../agents/ToolsAgent/V3/description';
+import type { RequestResponseMetadata } from '../agents/ToolsAgent/V3/execute';
 import { toolsAgentExecute } from '../agents/ToolsAgent/V3/execute';
 import { getInputs } from '../utils';
 

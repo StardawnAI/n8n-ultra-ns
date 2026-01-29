@@ -61,9 +61,7 @@ const mockRunData = {
 				['Test Node']: [
 					{
 						inputOverride: {
-							[NodeConnectionTypes.AiTool]: [
-								[{ json: { query: { testParam: 'override', testBoolean: true } } }],
-							],
+							[NodeConnectionTypes.AiTool]: [[{ json: { query: { testParam: 'override' } } }]],
 						},
 					},
 				],
@@ -208,7 +206,7 @@ describe('FromAiParametersModal', () => {
 		await userEvent.click(toolOption);
 		await nextTick();
 		const inputs = getByTestId('from-ai-parameters-modal-inputs');
-		const inputByName = inputs.querySelector('input[name="node_test-tool_query.query"]');
+		const inputByName = inputs.querySelector('input[name="query.query"]');
 		expect(inputByName).toBeTruthy();
 	});
 
@@ -229,14 +227,12 @@ describe('FromAiParametersModal', () => {
 		});
 
 		await userEvent.click(getByTestId('execute-workflow-button'));
+
 		expect(agentRequestStore.setAgentRequestForNode).toHaveBeenCalledWith('test-workflow', 'id1', {
 			query: {
-				Test_Node: {
-					testBoolean: true,
-					testParam: 'override',
-				},
+				testBoolean: true,
+				testParam: 'override',
 			},
-			toolName: 'Test_Node',
 		});
 	});
 
@@ -276,25 +272,21 @@ describe('FromAiParametersModal', () => {
 			},
 			pinia,
 		});
-		await nextTick();
+
 		const inputs = getByTestId('from-ai-parameters-modal-inputs');
-		const booleanInput = getByTestId('query.testBoolean') as Element;
-		const paramInput = inputs.querySelector('input[name="query.testParam"]') as Element;
-		expect(booleanInput).toBeTruthy();
-		expect(paramInput).toBeTruthy();
-		await userEvent.click(booleanInput); // uncheck the checkbox
-		await userEvent.clear(paramInput);
-		await userEvent.type(paramInput, 'given value');
+		await userEvent.click(inputs.querySelector('input[value="testBoolean"]') as Element);
+		await userEvent.clear(inputs.querySelector('input[name="query.testParam"]') as Element);
+		await userEvent.type(
+			inputs.querySelector('input[name="query.testParam"]') as Element,
+			'given value',
+		);
 		await userEvent.click(getByTestId('execute-workflow-button'));
 
 		expect(agentRequestStore.setAgentRequestForNode).toHaveBeenCalledWith('test-workflow', 'id1', {
 			query: {
-				Test_Node: {
-					testBoolean: false,
-					testParam: 'given value',
-				},
+				testBoolean: false,
+				testParam: 'given value',
 			},
-			toolName: 'Test_Node',
 		});
 	});
 

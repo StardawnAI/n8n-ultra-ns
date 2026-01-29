@@ -1,15 +1,7 @@
 import { Logger } from '@n8n/backend-common';
-import { IExecutionResponse } from '@n8n/db';
-import { OnShutdown } from '@n8n/decorators';
 import { Service } from '@n8n/di';
-import { ErrorReporter } from 'n8n-core';
-import {
-	jsonParse,
-	UnexpectedError,
-	ensureError,
-	CHAT_NODE_TYPE,
-	CHAT_TOOL_NODE_TYPE,
-} from 'n8n-workflow';
+import { OnShutdown } from '@n8n/decorators';
+import { jsonParse, UnexpectedError, ensureError } from 'n8n-workflow';
 import { type RawData, WebSocket } from 'ws';
 import { z } from 'zod';
 
@@ -21,6 +13,8 @@ import {
 	Session,
 } from './chat-service.types';
 import { getLastNodeExecuted, getMessage, shouldResumeImmediately } from './utils';
+import { ErrorReporter } from 'n8n-core';
+import { IExecutionResponse } from '@n8n/db';
 
 const CHECK_FOR_RESPONSE_INTERVAL = 3000;
 const DRAIN_TIMEOUT = 50;
@@ -135,10 +129,7 @@ export class ChatService {
 		session: Session,
 		sessionKey: string,
 	) {
-		let message = getMessage(execution);
-		if (typeof message === 'object') {
-			message = JSON.stringify(message);
-		}
+		const message = getMessage(execution);
 
 		if (message === undefined) return;
 
@@ -190,11 +181,6 @@ export class ChatService {
 
 				if (!execution) return;
 
-				if (execution.status === 'success') {
-					this.processSuccessExecution(session);
-					return;
-				}
-
 				if (session.nodeWaitingForChatResponse) {
 					this.waitForChatResponseOrContinue(execution, session);
 					return;
@@ -202,6 +188,11 @@ export class ChatService {
 
 				if (execution.status === 'waiting') {
 					await this.processWaitingExecution(execution, session, sessionKey);
+					return;
+				}
+
+				if (execution.status === 'success') {
+					this.processSuccessExecution(session);
 					return;
 				}
 			} catch (e) {
@@ -236,10 +227,9 @@ export class ChatService {
 				}
 
 				const executionId = session.executionId;
-				if (await this.shouldResumeOnMessage(executionId)) {
-					await this.resumeExecution(executionId, this.parseChatMessage(message), sessionKey);
-					session.nodeWaitingForChatResponse = undefined;
-				}
+
+				await this.resumeExecution(executionId, this.parseChatMessage(message), sessionKey);
+				session.nodeWaitingForChatResponse = undefined;
 			} catch (e) {
 				const error = ensureError(e);
 				this.errorReporter.error(error);
@@ -258,26 +248,17 @@ export class ChatService {
 
 	private async getExecutionOrCleanupSession(executionId: string, sessionKey: string) {
 		const execution = await this.executionManager.findExecution(executionId);
-		const session = this.sessions.get(sessionKey);
+
 		if (!execution || ['error', 'canceled', 'crashed'].includes(execution.status)) {
+			const session = this.sessions.get(sessionKey);
+
 			if (!session) return null;
 
 			this.cleanupSession(session, sessionKey);
 			return null;
 		}
 
-		if (execution.status === 'running') {
-			if (session?.nodeWaitingForChatResponse) {
-				// if the execution is running and there is a node waiting for a
-				// chat response it means that the execution was resumed by a
-				// form, so we send a continue message to the frontend to let it
-				// know that no user message is expected
-				session.connection.send(N8N_CONTINUE);
-				session.nodeWaitingForChatResponse = undefined;
-			}
-
-			return null;
-		}
+		if (execution.status === 'running') return null;
 
 		return execution;
 	}
@@ -345,21 +326,6 @@ export class ChatService {
 			this.errorReporter.error(error);
 			this.logger.error(`Error checking heartbeats: ${error.message}`);
 		}
-	}
-
-	private async shouldResumeOnMessage(executionId: string) {
-		const execution = await this.executionManager.findExecution(executionId);
-		if (!execution) {
-			return true;
-		}
-
-		const lastNode = getLastNodeExecuted(execution);
-		const isChatNode = lastNode?.type === CHAT_NODE_TYPE || lastNode?.type === CHAT_TOOL_NODE_TYPE;
-		if (isChatNode && lastNode?.parameters?.blockUserInput === true) {
-			return false;
-		}
-
-		return true;
 	}
 
 	@OnShutdown()

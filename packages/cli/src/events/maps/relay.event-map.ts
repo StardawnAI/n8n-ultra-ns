@@ -44,13 +44,6 @@ export type RelayEventMap = {
 		userId: string | null;
 	};
 
-	'instance-first-production-workflow-failed': {
-		projectId: string;
-		workflowId: string;
-		workflowName: string;
-		userId: string;
-	};
-
 	'first-workflow-data-loaded': {
 		userId: string;
 		workflowId: string;
@@ -358,7 +351,6 @@ export type RelayEventMap = {
 		projectId?: string;
 		projectType?: string;
 		uiContext?: string;
-		isDynamic?: boolean;
 	};
 
 	'credentials-shared': {
@@ -374,7 +366,6 @@ export type RelayEventMap = {
 		user: UserLike;
 		credentialType: string;
 		credentialId: string;
-		isDynamic?: boolean;
 	};
 
 	'credentials-deleted': {
@@ -660,18 +651,5 @@ export type RelayEventMap = {
 		jobId: string;
 	};
 
-	// #endregion
-
-	// #region workflow history compaction
-	'history-compacted': {
-		workflowsProcessed: number;
-		totalVersionsSeen: number;
-		totalVersionsDeleted: number;
-		errorCount: number;
-		durationMs: number;
-		windowStartIso: string;
-		windowEndIso: string;
-		compactionStartTime: Date;
-	};
 	// #endregion
 } & AiEventMap;

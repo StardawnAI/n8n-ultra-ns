@@ -57,7 +57,6 @@ export function useTypescript(
 						)
 					: [],
 				mode: toValue(mode),
-				binaryMode: workflowsStore.workflow.settings?.binaryMode,
 			},
 			Comlink.proxy(async (nodeName) => {
 				const node = workflowsStore.getNodeByName(nodeName);

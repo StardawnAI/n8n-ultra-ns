@@ -17,4 +17,3 @@ export type * from './select';
 export type * from './tabs';
 export type * from './text';
 export type * from './user';
-export * from './binary';

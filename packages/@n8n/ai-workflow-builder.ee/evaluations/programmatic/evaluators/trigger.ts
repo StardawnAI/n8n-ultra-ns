@@ -4,7 +4,7 @@ import type { SimpleWorkflow } from '@/types';
 import { validateTrigger } from '@/validation/checks';
 import type { SingleEvaluatorResult } from '@/validation/types';
 
-import { calcSingleEvaluatorScore } from '../score';
+import { calcSingleEvaluatorScore } from '../../utils/score';
 
 export function evaluateTrigger(
 	workflow: SimpleWorkflow,

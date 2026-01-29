@@ -194,8 +194,6 @@ export class Worker extends BaseCommand<z.infer<typeof flagsSchema>> {
 			});
 		}
 
-		Container.get(LoadNodesAndCredentials).releaseTypes();
-
 		// Make sure that the process does not close
 		if (!inTest) await new Promise(() => {});
 	}

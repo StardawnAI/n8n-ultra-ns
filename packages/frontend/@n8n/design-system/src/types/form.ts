@@ -6,11 +6,7 @@ export type FormInputsToFormValues<T extends IFormInput[], V> = {
 	[K in T[number]['name']]: V;
 };
 
-export type FormFieldValueUpdate<Metadata = Record<string, unknown>> = {
-	name: string;
-	value: FormFieldValue;
-	metadata?: Metadata;
-};
+export type FormFieldValueUpdate = { name: string; value: FormFieldValue };
 
 export type Rule = { name: string; config?: unknown };
 
@@ -37,13 +33,9 @@ export type FormState = {
 	hasBlutted: boolean;
 };
 
-export type IFormInput<Metadata = Record<string, unknown>> = {
+export type IFormInput = {
 	name: string;
 	initialValue?: string | number | boolean | null;
-	/**
-	 * Optional key-value pairs metadata that is passed with updates to the form.
-	 */
-	metadata?: Metadata;
 	properties: {
 		label?: string;
 		type?:

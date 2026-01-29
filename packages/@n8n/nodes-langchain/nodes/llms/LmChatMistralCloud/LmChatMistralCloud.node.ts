@@ -1,6 +1,5 @@
 import type { ChatMistralAIInput } from '@langchain/mistralai';
 import { ChatMistralAI } from '@langchain/mistralai';
-import { HTTPClient } from '@mistralai/mistralai/lib/http.js';
 import {
 	NodeConnectionTypes,
 	type INodeType,
@@ -10,7 +9,6 @@ import {
 } from 'n8n-workflow';
 
 import { getConnectionHintNoticeField } from '@utils/sharedFields';
-import { proxyFetch } from '@utils/httpProxyAgent';
 
 import { makeN8nLlmFailedAttemptHandler } from '../n8nLlmFailedAttemptHandler';
 import { N8nLlmTracing } from '../N8nLlmTracing';
@@ -190,15 +188,10 @@ export class LmChatMistralCloud implements INodeType {
 			randomSeed: undefined,
 		}) as Partial<ChatMistralAIInput>;
 
-		const fetchWithTimeout = async (input: RequestInfo | URL, init?: RequestInit) =>
-			await proxyFetch(input.toString(), init, {});
-		const httpClient = new HTTPClient({ fetcher: fetchWithTimeout });
-
 		const model = new ChatMistralAI({
 			apiKey: credentials.apiKey as string,
 			model: modelName,
 			...options,
-			httpClient,
 			callbacks: [new N8nLlmTracing(this)],
 			onFailedAttempt: makeN8nLlmFailedAttemptHandler(this),
 			metadata: {

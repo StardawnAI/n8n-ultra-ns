@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createComponentRenderer } from '@/__tests__/render';
 import DemoLayout from './DemoLayout.vue';
-import { createTestingPinia } from '@pinia/testing';
 
 const renderComponent = createComponentRenderer(DemoLayout, {
 	global: {
@@ -17,7 +16,6 @@ const renderComponent = createComponentRenderer(DemoLayout, {
 			},
 		},
 	},
-	pinia: createTestingPinia(),
 });
 
 describe('DemoLayout', () => {

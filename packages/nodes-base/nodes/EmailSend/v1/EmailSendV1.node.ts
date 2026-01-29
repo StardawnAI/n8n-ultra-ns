@@ -9,7 +9,6 @@ import type {
 import { NodeConnectionTypes } from 'n8n-workflow';
 import { createTransport } from 'nodemailer';
 import type SMTPTransport from 'nodemailer/lib/smtp-transport';
-import { prepareBinariesDataList } from '../../../utils/binary';
 
 const versionDescription: INodeTypeDescription = {
 	displayName: 'Send Email',
@@ -197,7 +196,11 @@ export class EmailSendV1 implements INodeType {
 
 				if (attachmentPropertyString && item.binary) {
 					const attachments = [];
-					const attachmentProperties = prepareBinariesDataList(attachmentPropertyString);
+					const attachmentProperties: string[] = attachmentPropertyString
+						.split(',')
+						.map((propertyName) => {
+							return propertyName.trim();
+						});
 
 					for (const propertyName of attachmentProperties) {
 						const binaryData = this.helpers.assertBinaryData(itemIndex, propertyName);

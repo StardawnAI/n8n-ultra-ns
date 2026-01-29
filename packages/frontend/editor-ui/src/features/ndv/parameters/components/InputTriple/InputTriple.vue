@@ -61,7 +61,7 @@ withDefaults(defineProps<Props>(), { middleWidth: '160px' });
 .background {
 	position: absolute;
 	background-color: var(--input-triple--color--background);
-	top: var(--parameter-input-options--height);
+	top: 0;
 	bottom: 0;
 	left: 0;
 	right: 0;

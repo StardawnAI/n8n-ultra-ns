@@ -181,7 +181,7 @@ ul.user-stack-list {
 	border: 1px solid var(--border-color--light);
 	border-radius: var(--radius);
 	padding: var(--spacing--5xs) 0;
-	box-shadow: var(--shadow--card-hover);
+	box-shadow: 0 2px 8px 0 #441c171a;
 	background-color: var(--color--background--light-3);
 }
 </style>

@@ -13,7 +13,6 @@ import {
 	keymap,
 	showTooltip,
 	tooltips,
-	ViewPlugin,
 	type Command,
 	type EditorView,
 	type Tooltip,
@@ -138,18 +137,19 @@ function getJsNodeAtPosition(state: EditorState, pos: number, anchor?: number) {
 	};
 }
 
-async function getCompletion(
+function getCompletion(
 	state: EditorState,
 	pos: number,
 	filter: (completion: Completion) => boolean,
-): Promise<Completion | null> {
+): Completion | null {
 	const context = new CompletionContext(state, pos, true);
-	const sources = state.languageDataAt<
-		(context: CompletionContext) => CompletionResult | Promise<CompletionResult | null>
-	>('autocomplete', pos);
+	const sources = state.languageDataAt<(context: CompletionContext) => CompletionResult>(
+		'autocomplete',
+		pos,
+	);
 
 	for (const source of sources) {
-		const result = await source(context);
+		const result = source(context);
 
 		const options = result?.options.filter(filter);
 		if (options && options.length > 0) {
@@ -166,15 +166,7 @@ const isInfoBoxRenderer = (
 	return typeof info === 'function';
 };
 
-interface TooltipContext {
-	state: EditorState;
-	head: number;
-	argIndex: number;
-	globalPosition: number;
-	methodName: string;
-}
-
-function getTooltipContext(state: EditorState): TooltipContext | null {
+function getInfoBoxTooltip(state: EditorState): Tooltip | null {
 	const { head, anchor } = state.selection.ranges[0];
 	const jsNodeResult = getJsNodeAtPosition(state, head, anchor);
 
@@ -199,53 +191,32 @@ function getTooltipContext(state: EditorState): TooltipContext | null {
 	switch (subject?.name) {
 		case 'MemberExpression': {
 			const methodName = readNode(subject.lastChild);
-			return {
+			const completion = getCompletion(
 				state,
-				head,
-				argIndex,
-				globalPosition: getGlobalPosition(subject.to - 1),
-				methodName: methodName + '()',
-			};
+				getGlobalPosition(subject.to - 1),
+				(c) => c.label === methodName + '()',
+			);
+
+			return completionToTooltip(completion, head, { argIndex });
 		}
 		case 'VariableName': {
 			const methodName = readNode(subject);
-			return {
+			const completion = getCompletion(
 				state,
-				head,
-				argIndex,
-				globalPosition: getGlobalPosition(subject.to - 1),
-				methodName: methodName + '()',
-			};
+				getGlobalPosition(subject.to - 1),
+				(c) => c.label === methodName + '()',
+			);
+
+			return completionToTooltip(completion, head, { argIndex });
 		}
 		default:
 			return null;
 	}
 }
 
-async function getInfoBoxTooltip(state: EditorState): Promise<Tooltip | null> {
-	const ctx = getTooltipContext(state);
-	if (!ctx) return null;
-
-	const completion = await getCompletion(
-		ctx.state,
-		ctx.globalPosition,
-		(c) => c.label === ctx.methodName,
-	);
-	return completionToTooltip(completion, ctx.head, { argIndex: ctx.argIndex });
-}
-
-const setAsyncTooltipEffect = StateEffect.define<Tooltip | null>();
-
-const cursorInfoBoxTooltip = StateField.define<{
-	tooltip: Tooltip | null;
-	contextKey: string | null;
-}>({
+const cursorInfoBoxTooltip = StateField.define<{ tooltip: Tooltip | null }>({
 	create(state) {
-		const ctx = getTooltipContext(state);
-		return {
-			tooltip: null,
-			contextKey: ctx ? `${ctx.globalPosition}:${ctx.methodName}` : null,
-		};
+		return { tooltip: getInfoBoxTooltip(state) };
 	},
 
 	update(value, tr) {
@@ -254,82 +225,22 @@ const cursorInfoBoxTooltip = StateField.define<{
 			tr.state.selection.ranges[0].head === 0 ||
 			completionStatus(tr.state) === 'active'
 		) {
-			return { tooltip: null, contextKey: null };
+			return { tooltip: null };
 		}
 
 		if (tr.effects.find((effect) => effect.is(closeInfoBoxEffect))) {
-			return { tooltip: null, contextKey: null };
+			return { tooltip: null };
 		}
 
-		// Check for async tooltip update effect
-		for (const effect of tr.effects) {
-			if (effect.is(setAsyncTooltipEffect)) {
-				return { ...value, tooltip: effect.value };
-			}
-		}
+		if (!tr.docChanged && !tr.selection) return { tooltip: value.tooltip };
 
-		if (!tr.docChanged && !tr.selection) return value;
-
-		const ctx = getTooltipContext(tr.state);
-		const newContextKey = ctx ? `${ctx.globalPosition}:${ctx.methodName}` : null;
-
-		// Context changed - clear tooltip, ViewPlugin will load new one async
-		if (newContextKey !== value.contextKey) {
-			return { tooltip: null, contextKey: newContextKey };
-		}
-
-		return value;
+		return { ...value, tooltip: getInfoBoxTooltip(tr.state) };
 	},
 
 	provide: (f) => showTooltip.compute([f], (state) => state.field(f).tooltip),
 });
 
-// ViewPlugin to handle async tooltip loading
-const asyncTooltipLoader = ViewPlugin.define((view) => {
-	let pendingLoad: { key: string; aborted: boolean } | null = null;
-
-	const loadAsync = async () => {
-		const ctx = getTooltipContext(view.state);
-		if (!ctx) return;
-
-		const contextKey = `${ctx.globalPosition}:${ctx.methodName}`;
-		const currentField = view.state.field(cursorInfoBoxTooltip, false);
-
-		// If we already have a tooltip or context hasn't changed, skip
-		if (currentField?.tooltip || currentField?.contextKey !== contextKey) return;
-
-		// Abort any pending load
-		if (pendingLoad) {
-			pendingLoad.aborted = true;
-		}
-
-		const load = { key: contextKey, aborted: false };
-		pendingLoad = load;
-
-		const tooltip = await getInfoBoxTooltip(view.state);
-
-		// Only dispatch if not aborted and context is still the same
-		if (!load.aborted && view.state.field(cursorInfoBoxTooltip, false)?.contextKey === contextKey) {
-			view.dispatch({ effects: setAsyncTooltipEffect.of(tooltip) });
-		}
-	};
-
-	// Initial load
-	void loadAsync();
-
-	return {
-		update(update) {
-			if (update.docChanged || update.selectionSet) {
-				void loadAsync();
-			}
-		},
-	};
-});
-
-export const hoverTooltipSource = async (
-	view: EditorView,
-	pos: number,
-): Promise<Tooltip | null> => {
+export const hoverTooltipSource = (view: EditorView, pos: number) => {
 	const state = view.state.field(cursorInfoBoxTooltip, false);
 	const cursorTooltipOpen = !!state?.tooltip;
 
@@ -344,8 +255,8 @@ export const hoverTooltipSource = async (
 
 	const { node, getGlobalPosition, readNode } = jsNodeResult;
 
-	const tooltipForNode = async (subject: SyntaxNode): Promise<Tooltip | null> => {
-		const completion = await getCompletion(
+	const tooltipForNode = (subject: SyntaxNode) => {
+		const completion = getCompletion(
 			view.state,
 			getGlobalPosition(subject.to - 1),
 			(c) => c.label === readNode(subject) || c.label === readNode(subject) + '()',
@@ -365,7 +276,7 @@ export const hoverTooltipSource = async (
 	switch (node.name) {
 		case 'VariableName':
 		case 'PropertyName': {
-			return await tooltipForNode(node);
+			return tooltipForNode(node);
 		}
 		case 'String':
 		case 'Number':
@@ -375,7 +286,7 @@ export const hoverTooltipSource = async (
 
 			if (!callExpression) return null;
 
-			return await tooltipForNode(callExpression);
+			return tooltipForNode(callExpression);
 		}
 
 		default:
@@ -403,7 +314,6 @@ export const infoBoxTooltips = (): Extension[] => {
 			parent: document.getElementById(CODEMIRROR_TOOLTIP_CONTAINER_ELEMENT_ID) ?? undefined,
 		}),
 		cursorInfoBoxTooltip,
-		asyncTooltipLoader,
 		hoverInfoBoxTooltip,
 		keymap.of([
 			{

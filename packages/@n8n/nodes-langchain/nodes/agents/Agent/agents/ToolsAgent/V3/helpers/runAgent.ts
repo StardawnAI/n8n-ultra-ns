@@ -1,24 +1,23 @@
+import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import type { AgentRunnableSequence } from '@langchain/classic/agents';
 import type { BaseChatMemory } from '@langchain/classic/memory';
-import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
-import {
-	buildResponseMetadata,
-	createEngineRequests,
-	loadMemory,
-	processEventStream,
-	saveToMemory,
-	type RequestResponseMetadata,
-} from '@utils/agent-execution';
-import { getTracingConfig } from '@utils/tracing';
 import type {
-	EngineRequest,
-	EngineResponse,
 	IExecuteFunctions,
 	ISupplyDataFunctions,
+	EngineResponse,
+	EngineRequest,
 } from 'n8n-workflow';
 
+import {
+	loadMemory,
+	processEventStream,
+	createEngineRequests,
+	saveToMemory,
+} from '@utils/agent-execution';
+
 import { SYSTEM_MESSAGE } from '../../prompt';
-import type { AgentResult } from '../types';
+import type { AgentResult, RequestResponseMetadata } from '../types';
+import { buildResponseMetadata } from './buildResponseMetadata';
 import type { ItemContext } from './prepareItemContext';
 
 type RunAgentResult = AgentResult | EngineRequest<RequestResponseMetadata>;
@@ -45,7 +44,6 @@ export async function runAgent(
 	const { itemIndex, input, steps, tools, options } = itemContext;
 
 	const invokeParams = {
-		// steps are passed to the ToolCallingAgent in the runnable sequence to keep track of tool calls
 		steps,
 		input,
 		system_message: options.systemMessage ?? SYSTEM_MESSAGE,
@@ -64,7 +62,7 @@ export async function runAgent(
 		ctx.getNode().typeVersion >= 2.1
 	) {
 		const chatHistory = await loadMemory(memory, model, options.maxTokensFromMemory);
-		const eventStream = executor.withConfig(getTracingConfig(ctx)).streamEvents(
+		const eventStream = executor.streamEvents(
 			{
 				...invokeParams,
 				chat_history: chatHistory,
@@ -79,7 +77,7 @@ export async function runAgent(
 
 		// If result contains tool calls, build the request object like the normal flow
 		if (result.toolCalls && result.toolCalls.length > 0) {
-			const actions = createEngineRequests(result.toolCalls, itemIndex, tools);
+			const actions = await createEngineRequests(result.toolCalls, itemIndex, tools);
 
 			return {
 				actions,
@@ -101,7 +99,7 @@ export async function runAgent(
 		// Handle regular execution
 		const chatHistory = await loadMemory(memory, model, options.maxTokensFromMemory);
 
-		const modelResponse = await executor.withConfig(getTracingConfig(ctx)).invoke({
+		const modelResponse = await executor.invoke({
 			...invokeParams,
 			chat_history: chatHistory,
 		});
@@ -121,7 +119,7 @@ export async function runAgent(
 		}
 
 		// If response contains tool calls, we need to return this in the right format
-		const actions = createEngineRequests(modelResponse, itemIndex, tools);
+		const actions = await createEngineRequests(modelResponse, itemIndex, tools);
 
 		return {
 			actions,

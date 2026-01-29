@@ -302,33 +302,28 @@ onMounted(async () => {
 						:class="$style.textBlock"
 						data-test-id="project-move-resource-modal-checkbox-all"
 					>
-						<template #label>
-							<I18nT keypath="projects.move.resource.modal.message.usedCredentials" scope="global">
-								<template #usedCredentials>
-									<N8nTooltip placement="top">
-										<span :class="$style.tooltipText">
-											{{
-												i18n.baseText(
-													'projects.move.resource.modal.message.usedCredentials.number',
-													{
-														adjustToNumber: shareableCredentials.length,
-														interpolate: { count: shareableCredentials.length },
-													},
-												)
-											}}
-										</span>
-										<template #content>
-											<ProjectMoveResourceModalCredentialsList
-												:current-project-id="projectsStore.currentProjectId"
-												:credentials="shareableCredentials"
-											/>
-										</template>
-									</N8nTooltip>
-								</template>
-							</I18nT>
-						</template>
+						<I18nT keypath="projects.move.resource.modal.message.usedCredentials" scope="global">
+							<template #usedCredentials>
+								<N8nTooltip placement="top">
+									<span :class="$style.tooltipText">
+										{{
+											i18n.baseText('projects.move.resource.modal.message.usedCredentials.number', {
+												adjustToNumber: shareableCredentials.length,
+												interpolate: { count: shareableCredentials.length },
+											})
+										}}
+									</span>
+									<template #content>
+										<ProjectMoveResourceModalCredentialsList
+											:current-project-id="projectsStore.currentProjectId"
+											:credentials="shareableCredentials"
+										/>
+									</template>
+								</N8nTooltip>
+							</template>
+						</I18nT>
 					</N8nCheckbox>
-					<div v-if="unShareableCredentials.length" :class="$style.textBlock">
+					<span v-if="unShareableCredentials.length" :class="$style.textBlock">
 						<I18nT
 							keypath="projects.move.resource.modal.message.unAccessibleCredentials.note"
 							scope="global"
@@ -347,7 +342,7 @@ onMounted(async () => {
 								</N8nTooltip>
 							</template>
 						</I18nT>
-					</div>
+					</span>
 				</N8nText>
 			</div>
 			<N8nText v-else>{{
@@ -386,6 +381,7 @@ onMounted(async () => {
 }
 
 .textBlock {
+	display: block;
 	margin-top: var(--spacing--sm);
 }
 

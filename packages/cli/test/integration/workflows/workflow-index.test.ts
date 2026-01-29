@@ -1,5 +1,6 @@
 import { Logger } from '@n8n/backend-common';
 import { testDb } from '@n8n/backend-test-utils';
+import { DatabaseConfig } from '@n8n/config';
 import type { IWorkflowDb } from '@n8n/db';
 import { WorkflowDependencyRepository, WorkflowRepository } from '@n8n/db';
 import { Container } from '@n8n/di';
@@ -47,6 +48,12 @@ afterAll(async () => {
 });
 
 describe('WorkflowIndexService Integration', () => {
+	if (Container.get(DatabaseConfig).isLegacySqlite) {
+		// NOTE: this feature isn't supported on legacy SQLite databases, so we skip the tests.
+		it('is not supported on legacy SQLite databases', async () => {});
+		return;
+	}
+
 	describe('workflow-created event', () => {
 		it('should index a new workflow with a single node', async () => {
 			// Arrange

@@ -11,7 +11,7 @@ describe('@CredentialResolver decorator', () => {
 	let resolverMetadata: CredentialResolverEntryMetadata;
 
 	beforeEach(() => {
-		vi.resetAllMocks();
+		jest.resetAllMocks();
 
 		resolverMetadata = new CredentialResolverEntryMetadata();
 		Container.set(CredentialResolverEntryMetadata, resolverMetadata);
@@ -228,11 +228,11 @@ describe('@CredentialResolver decorator', () => {
 		}
 
 		@CredentialResolver()
-		class TestResolver implements ICredentialResolver {
+		class StubResolver implements ICredentialResolver {
 			metadata = {
-				name: 'test.resolver',
-				description: 'Test resolver for testing',
-				displayName: 'Test Resolver',
+				name: 'stub.resolver',
+				description: 'Stub resolver for testing',
+				displayName: 'Stub Resolver',
 			};
 
 			async getSecret(
@@ -255,13 +255,13 @@ describe('@CredentialResolver decorator', () => {
 
 		const registeredResolvers = resolverMetadata.getClasses();
 		const oauthResolver = Container.get(OAuthResolver);
-		const testResolver = Container.get(TestResolver);
+		const stubResolver = Container.get(StubResolver);
 
 		expect(registeredResolvers).toHaveLength(2);
 		expect(oauthResolver.metadata.name).toBe('oauth.resolver');
 		expect(oauthResolver.metadata.displayName).toBe('OAuth Resolver');
-		expect(testResolver.metadata.name).toBe('test.resolver');
-		expect(testResolver.metadata.displayName).toBe('Test Resolver');
+		expect(stubResolver.metadata.name).toBe('stub.resolver');
+		expect(stubResolver.metadata.displayName).toBe('Stub Resolver');
 	});
 
 	it('should support resolvers with configuration options', () => {

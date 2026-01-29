@@ -101,15 +101,9 @@ export class ExecuteContext extends BaseExecuteContext implements IExecuteFuncti
 			...getDeduplicationHelperFunctions(workflow, node),
 
 			assertBinaryData: (itemIndex, propertyName) =>
-				assertBinaryData(inputData, node, itemIndex, propertyName, 0, workflow.settings.binaryMode),
+				assertBinaryData(inputData, node, itemIndex, propertyName, 0),
 			getBinaryDataBuffer: async (itemIndex, propertyName) =>
-				await getBinaryDataBuffer(
-					inputData,
-					itemIndex,
-					propertyName,
-					0,
-					workflow.settings.binaryMode,
-				),
+				await getBinaryDataBuffer(inputData, itemIndex, propertyName, 0),
 			detectBinaryEncoding: (buffer: Buffer) => detectBinaryEncoding(buffer),
 		};
 

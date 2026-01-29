@@ -25,28 +25,17 @@ exports[`PushConnectionTracker > should render error when disconnected and conne
       class="push-connection-lost primary-color"
     >
       
-      
-      
       <span
-        class=""
-        data-grace-area-trigger=""
-        data-state="closed"
+        class="el-tooltip__trigger"
       >
-        
-        
-        <span>
-          <n8n-icon-stub
-            icon="triangle-alert"
-            spin="false"
-          />
-            Connection lost
-        </span>
-        
-        
+        <n8n-icon-stub
+          icon="triangle-alert"
+          spin="false"
+        />
+          Connection lost
       </span>
-      <!--v-if-->
-      
-      
+      <!--teleport start-->
+      <!--teleport end-->
       
     </div>
   </span>

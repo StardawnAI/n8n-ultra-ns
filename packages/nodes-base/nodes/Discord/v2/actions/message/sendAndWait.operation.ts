@@ -40,6 +40,7 @@ export async function execute(
 			userGuilds,
 			isOAuth2,
 			body: createSendAndWaitMessageBody(this),
+			items,
 		});
 	} catch (error) {
 		const err = parseDiscordError.call(this, error, 0);

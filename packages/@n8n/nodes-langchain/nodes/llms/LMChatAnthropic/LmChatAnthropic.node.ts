@@ -324,7 +324,7 @@ export class LmChatAnthropic implements INodeType {
 		}
 
 		const clientOptions: {
-			fetchOptions?: { dispatcher: ReturnType<typeof getProxyAgent> };
+			fetchOptions?: { dispatcher: any };
 			defaultHeaders?: Record<string, string>;
 		} = {
 			fetchOptions: {

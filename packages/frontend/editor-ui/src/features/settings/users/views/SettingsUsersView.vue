@@ -10,12 +10,7 @@ import {
 } from '@n8n/api-types';
 import type { UserAction } from '@n8n/design-system';
 import type { TableOptions } from '@n8n/design-system/components/N8nDataTableServer';
-import {
-	DEBOUNCE_TIME,
-	EnterpriseEditionFeature,
-	getDebounceTime,
-	MODAL_CONFIRM,
-} from '@/app/constants';
+import { EnterpriseEditionFeature, MODAL_CONFIRM } from '@/app/constants';
 import { DELETE_USER_MODAL_KEY, INVITE_USER_MODAL_KEY } from '../users.constants';
 import EnterpriseEdition from '@/app/components/EnterpriseEdition.ee.vue';
 import type { InvitableRoleName } from '../users.types';
@@ -431,7 +426,7 @@ const updateUsersTableData = async ({ page, itemsPerPage, sortBy }: TableOptions
 const debouncedUpdateUsersTableData = useDebounceFn(() => {
 	usersTableState.value.page = 0; // Reset to first page on search
 	void updateUsersTableData(usersTableState.value);
-}, getDebounceTime(DEBOUNCE_TIME.INPUT.SEARCH));
+}, 300);
 
 const onSearch = (value: string) => {
 	search.value = value;

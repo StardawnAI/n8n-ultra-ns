@@ -54,7 +54,7 @@ const tip = computed<TipId>(() => {
 	return 'default';
 });
 
-async function getCompletionsWithDot(): Promise<readonly Completion[]> {
+function getCompletionsWithDot(): readonly Completion[] {
 	if (!props.editorState || !props.selection || !props.unresolvedExpression) {
 		return [];
 	}
@@ -76,7 +76,7 @@ async function getCompletionsWithDot(): Promise<readonly Completion[]> {
 	});
 
 	const context = new CompletionContext(stateWithDot, cursorAfterDot, true);
-	const completionResult = await datatypeCompletions(context);
+	const completionResult = datatypeCompletions(context);
 	return completionResult?.options ?? [];
 }
 
@@ -94,8 +94,8 @@ watch(
 
 watchDebounced(
 	[() => props.selection, () => props.unresolvedExpression],
-	async () => {
-		const completions = await getCompletionsWithDot();
+	() => {
+		const completions = getCompletionsWithDot();
 		canAddDotToExpression.value = completions.length > 0;
 		resolvedExpressionHasFields.value = completions.some(
 			({ section }) => isCompletionSection(section) && section.name === FIELDS_SECTION.name,

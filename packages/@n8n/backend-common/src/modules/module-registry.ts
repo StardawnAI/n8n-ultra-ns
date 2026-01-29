@@ -40,10 +40,6 @@ export class ModuleRegistry {
 		'source-control',
 		'dynamic-credentials',
 		'chat-hub',
-		'sso-oidc',
-		'sso-saml',
-		'log-streaming',
-		'ldap',
 	];
 
 	private readonly activeModules: string[] = [];
@@ -104,8 +100,6 @@ export class ModuleRegistry {
 			const loadDir = await Container.get(ModuleClass).loadDir?.();
 
 			if (loadDir) this.loadDirs.push(loadDir);
-
-			await Container.get(ModuleClass).commands?.();
 		}
 	}
 

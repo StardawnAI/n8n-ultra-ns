@@ -14,7 +14,7 @@ import type {
 	ChatHubCreateAgentRequest,
 	ChatHubUpdateAgentRequest,
 	ChatHubUpdateConversationRequest,
-	MessageChunk,
+	EnrichedStructuredChunk,
 	ChatHubLLMProvider,
 	ChatProviderSettingsDto,
 } from '@n8n/api-types';
@@ -33,11 +33,11 @@ export const fetchChatModelsApi = async (
 export function sendMessageApi(
 	ctx: IRestApiContext,
 	payload: ChatHubSendMessageRequest,
-	onMessageUpdated: (data: MessageChunk) => void,
+	onMessageUpdated: (data: EnrichedStructuredChunk) => void,
 	onDone: () => void,
 	onError: (e: Error) => void,
 ) {
-	void streamRequest<MessageChunk>(
+	void streamRequest<EnrichedStructuredChunk>(
 		ctx,
 		'/chat/conversations/send',
 		payload,
@@ -51,11 +51,11 @@ export function sendMessageApi(
 export function editMessageApi(
 	ctx: IRestApiContext,
 	request: { sessionId: ChatSessionId; editId: ChatMessageId; payload: ChatHubEditMessageRequest },
-	onMessageUpdated: (data: MessageChunk) => void,
+	onMessageUpdated: (data: EnrichedStructuredChunk) => void,
 	onDone: () => void,
 	onError: (e: Error) => void,
 ) {
-	void streamRequest<MessageChunk>(
+	void streamRequest<EnrichedStructuredChunk>(
 		ctx,
 		`/chat/conversations/${request.sessionId}/messages/${request.editId}/edit`,
 		request.payload,
@@ -73,11 +73,11 @@ export function regenerateMessageApi(
 		retryId: ChatMessageId;
 		payload: ChatHubRegenerateMessageRequest;
 	},
-	onMessageUpdated: (data: MessageChunk) => void,
+	onMessageUpdated: (data: EnrichedStructuredChunk) => void,
 	onDone: () => void,
 	onError: (e: Error) => void,
 ) {
-	void streamRequest<MessageChunk>(
+	void streamRequest<EnrichedStructuredChunk>(
 		ctx,
 		`/chat/conversations/${request.sessionId}/messages/${request.retryId}/regenerate`,
 		request.payload,

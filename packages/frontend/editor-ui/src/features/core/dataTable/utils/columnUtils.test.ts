@@ -11,7 +11,7 @@ import { ref } from 'vue';
 import type { I18nClass } from '@n8n/i18n';
 import type { DataTableColumn, DataTableRow } from '@/features/core/dataTable/dataTable.types';
 import {
-	createCellClass,
+	getCellClass,
 	createValueGetter,
 	createCellRendererSelector,
 	createStringValueSetter,
@@ -22,16 +22,9 @@ import {
 	getBooleanColumnFilterOptions,
 	getNumberColumnFilterOptions,
 	getDateColumnFilterOptions,
-	isOversizedValue,
 } from './columnUtils';
-import {
-	ADD_ROW_ROW_ID,
-	NULL_VALUE,
-	EMPTY_VALUE,
-	MAX_CELL_DISPLAY_LENGTH,
-} from '@/features/core/dataTable/constants';
+import { ADD_ROW_ROW_ID, NULL_VALUE, EMPTY_VALUE } from '@/features/core/dataTable/constants';
 import NullEmptyCellRenderer from '@/features/core/dataTable/components/dataGrid/NullEmptyCellRenderer.vue';
-import OversizedCellRenderer from '@/features/core/dataTable/components/dataGrid/OversizedCellRenderer.vue';
 
 describe('columnUtils', () => {
 	let mockI18n: I18nClass;
@@ -42,28 +35,7 @@ describe('columnUtils', () => {
 		} as unknown as I18nClass;
 	});
 
-	describe('isOversizedValue', () => {
-		it('should return true for strings exceeding max length', () => {
-			const longString = 'a'.repeat(MAX_CELL_DISPLAY_LENGTH + 1);
-			expect(isOversizedValue(longString)).toBe(true);
-		});
-
-		it('should return false for strings within max length', () => {
-			const shortString = 'a'.repeat(MAX_CELL_DISPLAY_LENGTH);
-			expect(isOversizedValue(shortString)).toBe(false);
-		});
-
-		it('should return false for non-string values', () => {
-			expect(isOversizedValue(12345)).toBe(false);
-			expect(isOversizedValue(null)).toBe(false);
-			expect(isOversizedValue(undefined)).toBe(false);
-			expect(isOversizedValue({ key: 'value' })).toBe(false);
-		});
-	});
-
-	describe('createCellClass', () => {
-		const col: DataTableColumn = { id: 'col1', name: 'test', type: 'string', index: 0 };
-
+	describe('getCellClass', () => {
 		it('should return "add-row-cell" for add row', () => {
 			const params = {
 				data: { id: ADD_ROW_ROW_ID },
@@ -72,7 +44,7 @@ describe('columnUtils', () => {
 				},
 			} as unknown as CellClassParams;
 
-			expect(createCellClass(col)(params)).toBe('add-row-cell');
+			expect(getCellClass(params)).toBe('add-row-cell');
 		});
 
 		it('should return "boolean-cell" for boolean columns', () => {
@@ -83,30 +55,18 @@ describe('columnUtils', () => {
 				},
 			} as unknown as CellClassParams;
 
-			expect(createCellClass(col)(params)).toBe('boolean-cell');
-		});
-
-		it('should return "oversized-cell" for oversized values', () => {
-			const longString = 'a'.repeat(MAX_CELL_DISPLAY_LENGTH + 1);
-			const params = {
-				data: { id: 1, test: longString },
-				column: {
-					getUserProvidedColDef: () => ({ cellDataType: 'text' }),
-				},
-			} as unknown as CellClassParams;
-
-			expect(createCellClass(col)(params)).toBe('oversized-cell');
+			expect(getCellClass(params)).toBe('boolean-cell');
 		});
 
 		it('should return empty string for regular cells', () => {
 			const params = {
-				data: { id: 1, test: 'normal value' },
+				data: { id: 1 },
 				column: {
 					getUserProvidedColDef: () => ({ cellDataType: 'text' }),
 				},
 			} as unknown as CellClassParams;
 
-			expect(createCellClass(col)(params)).toBe('');
+			expect(getCellClass(params)).toBe('');
 		});
 	});
 
@@ -216,18 +176,6 @@ describe('columnUtils', () => {
 
 			const selector = createCellRendererSelector(col);
 			expect(selector(params)).toBeUndefined();
-		});
-
-		it('should return OversizedCellRenderer for oversized values', () => {
-			const col: DataTableColumn = { id: 'col1', name: 'test', type: 'string', index: 0 };
-			const longString = 'a'.repeat(MAX_CELL_DISPLAY_LENGTH + 1);
-			const params = { data: { test: longString } } as ICellRendererParams;
-
-			const selector = createCellRendererSelector(col);
-			const result = selector(params);
-			expect(result).toEqual({
-				component: OversizedCellRenderer,
-			});
 		});
 	});
 

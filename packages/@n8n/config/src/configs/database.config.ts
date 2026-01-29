@@ -143,6 +143,12 @@ export class SqliteConfig {
 	poolSize: number = 3;
 
 	/**
+	 * Enable SQLite WAL mode.
+	 */
+	@Env('DB_SQLITE_ENABLE_WAL')
+	enableWAL: boolean = this.poolSize > 1;
+
+	/**
 	 * Run `VACUUM` on startup to rebuild the database, reducing file size and optimizing indexes.
 	 *
 	 * @warning Long-running blocking operation that will increase startup time.
@@ -159,6 +165,13 @@ export class DatabaseConfig {
 	/** Type of database to use */
 	@Env('DB_TYPE', dbTypeSchema)
 	type: DbType = 'sqlite';
+
+	/**
+	 * Legacy sqlite is no longer supported. Setting kept until we clean up all uses.
+	 */
+	get isLegacySqlite() {
+		return false;
+	}
 
 	/** Prefix for table names */
 	@Env('DB_TABLE_PREFIX')

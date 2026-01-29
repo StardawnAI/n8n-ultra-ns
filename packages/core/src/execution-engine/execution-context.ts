@@ -197,8 +197,7 @@ export const establishExecutionContext = async (
 			startItem.data['main'][0] = triggerItems;
 		}
 	} catch (error) {
-		// Log the error
+		// Log the error but proceed with the established context
 		Container.get(Logger).error('Failed to augment execution context with hooks.', { error });
-		throw error;
 	}
 };

@@ -14,9 +14,7 @@ import { TARGET_NODE_PARAMETER_FACET } from './constants';
  * - `$('Test').last().json.myArr[|`
  * - `$input.first().json.myStr[|`
  */
-export async function bracketAccessCompletions(
-	context: CompletionContext,
-): Promise<CompletionResult | null> {
+export function bracketAccessCompletions(context: CompletionContext): CompletionResult | null {
 	const targetNodeParameterContext = context.state.facet(TARGET_NODE_PARAMETER_FACET);
 	const word = context.matchBefore(/\$[\S\s]*\[.*/);
 
@@ -34,7 +32,7 @@ export async function bracketAccessCompletions(
 	let resolved: Resolved;
 
 	try {
-		resolved = await resolveAutocompleteExpression(
+		resolved = resolveAutocompleteExpression(
 			`={{ ${base} }}`,
 			targetNodeParameterContext?.nodeName,
 		);

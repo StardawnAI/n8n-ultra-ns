@@ -90,8 +90,7 @@ type EntityName =
 	| 'RefreshToken'
 	| 'UserConsent'
 	| 'DynamicCredentialEntry'
-	| 'DynamicCredentialResolver'
-	| 'DynamicCredentialUserEntry';
+	| 'DynamicCredentialResolver';
 
 /**
  * Truncate specific DB tables in a test DB.

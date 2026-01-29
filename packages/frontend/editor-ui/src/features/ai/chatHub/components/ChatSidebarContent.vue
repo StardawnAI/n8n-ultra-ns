@@ -265,7 +265,8 @@ onMounted(() => {
 .links {
 	display: flex;
 	flex-direction: column;
-	padding: var(--spacing--2xs) var(--spacing--3xs);
+	padding: 0 var(--spacing--3xs) var(--spacing--2xs);
+	gap: 1px;
 
 	&.collapsed {
 		border-bottom: var(--border);

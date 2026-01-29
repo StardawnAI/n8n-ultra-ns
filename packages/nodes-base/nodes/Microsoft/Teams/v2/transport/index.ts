@@ -20,12 +20,6 @@ export async function microsoftApiRequest(
 	uri?: string,
 	headers: IDataObject = {},
 ): Promise<any> {
-	const credentials = await this.getCredentials('microsoftTeamsOAuth2Api');
-	const baseUrl = (
-		typeof credentials.graphApiBaseUrl === 'string' && credentials.graphApiBaseUrl !== ''
-			? credentials.graphApiBaseUrl
-			: 'https://graph.microsoft.com'
-	).replace(/\/+$/, '');
 	const options: IRequestOptions = {
 		headers: {
 			'Content-Type': 'application/json',
@@ -33,7 +27,7 @@ export async function microsoftApiRequest(
 		method,
 		body,
 		qs,
-		uri: uri || `${baseUrl}${resource}`,
+		uri: uri || `https://graph.microsoft.com${resource}`,
 		json: true,
 	};
 	try {

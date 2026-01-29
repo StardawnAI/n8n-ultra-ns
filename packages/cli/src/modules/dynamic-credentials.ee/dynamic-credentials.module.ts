@@ -41,11 +41,8 @@ export class DynamicCredentialsModule implements ModuleInterface {
 		}
 		const { DynamicCredentialResolver } = await import('./database/entities/credential-resolver');
 		const { DynamicCredentialEntry } = await import('./database/entities/dynamic-credential-entry');
-		const { DynamicCredentialUserEntry } = await import(
-			'./database/entities/dynamic-credential-user-entry'
-		);
 
-		return [DynamicCredentialResolver, DynamicCredentialEntry, DynamicCredentialUserEntry];
+		return [DynamicCredentialResolver, DynamicCredentialEntry];
 	}
 
 	@OnShutdown()

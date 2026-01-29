@@ -6,7 +6,6 @@ import { createTestingPinia } from '@pinia/testing';
 import userEvent from '@testing-library/user-event';
 import { fireEvent, waitFor } from '@testing-library/vue';
 import { setActivePinia } from 'pinia';
-import { flushPromises } from '@vue/test-utils';
 
 describe('FixedCollectionParameterLegacy.vue', () => {
 	const pinia = createTestingPinia({
@@ -17,10 +16,6 @@ describe('FixedCollectionParameterLegacy.vue', () => {
 		},
 	});
 	setActivePinia(pinia);
-
-	afterEach(async () => {
-		await flushPromises();
-	});
 
 	const props: Props = {
 		parameter: {
@@ -61,26 +56,22 @@ describe('FixedCollectionParameterLegacy.vue', () => {
 	};
 	const renderComponent = createComponentRenderer(FixedCollectionParameterLegacy, { props });
 
-	it('renders the component', async () => {
+	it('renders the component', () => {
 		const { getByTestId } = renderComponent();
-		await flushPromises();
 		expect(getByTestId('fixed-collection-rules')).toBeInTheDocument();
 		expect(getByTestId('fixed-collection-add')).toBeInTheDocument();
 		expect(getByTestId('fixed-collection-delete')).toBeInTheDocument();
 		expect(getByTestId('parameter-item')).toBeInTheDocument();
 	});
 
-	it('computes placeholder text correctly', async () => {
+	it('computes placeholder text correctly', () => {
 		const { getByTestId } = renderComponent();
-		await flushPromises();
 		expect(getByTestId('fixed-collection-add')).toHaveTextContent('Add Routing Rule');
 	});
 
 	it('emits valueChanged event on option creation', async () => {
 		const { getByTestId, emitted } = renderComponent();
-		await flushPromises();
 		await userEvent.click(getByTestId('fixed-collection-add'));
-		await flushPromises();
 		expect(emitted('valueChanged')).toEqual([
 			[
 				{
@@ -100,9 +91,7 @@ describe('FixedCollectionParameterLegacy.vue', () => {
 				},
 			},
 		});
-		await flushPromises();
 		await userEvent.click(getByTestId('fixed-collection-delete'));
-		await flushPromises();
 		expect(emitted('valueChanged')).toEqual([
 			[
 				{
@@ -141,9 +130,8 @@ describe('FixedCollectionParameterLegacy.vue', () => {
 				values: { p0: [{ p0: 'Test' }] },
 			},
 		});
-		await flushPromises();
 
-		const input = await rendered.findByRole('textbox');
+		const input = rendered.getByRole('textbox');
 
 		await waitFor(() => expect(input).toHaveValue('Test'));
 		await fireEvent.focus(input);
@@ -155,7 +143,6 @@ describe('FixedCollectionParameterLegacy.vue', () => {
 			nodeValues: { parameters: { rules: { p0: [{ p0: 'Updated' }] } } },
 			values: { p0: [{ p0: 'Updated' }] },
 		});
-		await flushPromises();
 		expect(input).toBeInTheDocument();
 		await waitFor(() => expect(input).toHaveValue('Updated'));
 		expect(document.activeElement).toBe(input);
@@ -252,15 +239,13 @@ describe('FixedCollectionParameterLegacy.vue', () => {
 			props: hideOptionalFieldsProps,
 		});
 
-		it('renders the optional values picker when hideOptionalFields is true', async () => {
+		it('renders the optional values picker when hideOptionalFields is true', () => {
 			const { getByTestId } = renderRequiredOnly();
-			await flushPromises();
 			expect(getByTestId('fixed-collection-add-property')).toBeInTheDocument();
 		});
 
 		it('shows required values and notices by default', async () => {
 			const { container } = renderRequiredOnly();
-			await flushPromises();
 
 			await waitFor(() => {
 				const parameterItems = container.querySelectorAll('[data-test-id="parameter-item"]');
@@ -270,7 +255,6 @@ describe('FixedCollectionParameterLegacy.vue', () => {
 
 		it('shows optional values in the picker dropdown', async () => {
 			const { getByTestId, getByRole } = renderRequiredOnly();
-			await flushPromises();
 			const picker = getByTestId('fixed-collection-add-property');
 			expect(picker).toBeInTheDocument();
 
@@ -291,7 +275,6 @@ describe('FixedCollectionParameterLegacy.vue', () => {
 
 		it('emits valueChanged when toggling an optional value on', async () => {
 			const { getByRole, emitted } = renderRequiredOnly();
-			await flushPromises();
 			const selectInput = getByRole('textbox');
 
 			await userEvent.click(selectInput);
@@ -307,7 +290,6 @@ describe('FixedCollectionParameterLegacy.vue', () => {
 					await userEvent.click(placeholderOption);
 				}
 			});
-			await flushPromises();
 
 			await waitFor(() => {
 				const events = emitted('valueChanged');
@@ -344,7 +326,6 @@ describe('FixedCollectionParameterLegacy.vue', () => {
 			};
 
 			const { container } = renderRequiredOnly({ props: propsWithSavedValue });
-			await flushPromises();
 
 			await waitFor(() => {
 				const parameterItems = container.querySelectorAll('[data-test-id="parameter-item"]');
@@ -418,7 +399,6 @@ describe('FixedCollectionParameterLegacy.vue', () => {
 			});
 
 			const { container } = renderWithArrayField();
-			await flushPromises();
 
 			await waitFor(() => {
 				const parameterItems = container.querySelectorAll('[data-test-id="parameter-item"]');
@@ -492,7 +472,6 @@ describe('FixedCollectionParameterLegacy.vue', () => {
 			});
 
 			const { container } = renderWithArrayFieldDefault();
-			await flushPromises();
 
 			await waitFor(() => {
 				const parameterItems = container.querySelectorAll('[data-test-id="parameter-item"]');
@@ -516,7 +495,6 @@ describe('FixedCollectionParameterLegacy.vue', () => {
 			};
 
 			const { container } = renderRequiredOnly({ props: propsWithAutoShow });
-			await flushPromises();
 
 			await waitFor(() => {
 				const parameterItems = container.querySelectorAll('[data-test-id="parameter-item"]');

@@ -9,12 +9,7 @@ import { v4 as uuid } from 'uuid';
 
 import type { TodoistResponse } from './Service';
 import type { Context } from '../GenericFunctions';
-import {
-	FormatDueDatetime,
-	todoistApiGetAllRequest,
-	todoistApiRequest,
-	todoistSyncRequest,
-} from '../GenericFunctions';
+import { FormatDueDatetime, todoistApiRequest, todoistSyncRequest } from '../GenericFunctions';
 
 // Helper function for string or number validation
 function assertValidTodoistId(
@@ -309,15 +304,17 @@ export class GetAllHandler implements OperationHandler {
 			qs.ids = filters.ids;
 		}
 
-		let limit: undefined | number = undefined;
+		let responseData = await todoistApiRequest.call(ctx, 'GET', '/tasks', {}, qs);
+
 		if (!returnAll) {
-			limit = ctx.getNodeParameter('limit', itemIndex) as number;
+			const limit = ctx.getNodeParameter('limit', itemIndex);
 			assertParamIsNumber('limit', limit, ctx.getNode());
+			responseData = responseData.splice(0, limit);
 		}
 
-		const data = await todoistApiGetAllRequest(ctx, '/tasks', qs, limit);
-
-		return { data };
+		return {
+			data: responseData,
+		};
 	}
 }
 
@@ -536,7 +533,7 @@ export class ProjectGetHandler implements OperationHandler {
 
 export class ProjectGetAllHandler implements OperationHandler {
 	async handleOperation(ctx: Context, _itemIndex: number): Promise<TodoistResponse> {
-		const data = await todoistApiGetAllRequest(ctx, '/projects');
+		const data = await todoistApiRequest.call(ctx, 'GET', '/projects');
 		return { data };
 	}
 }
@@ -588,7 +585,7 @@ export class ProjectGetCollaboratorsHandler implements OperationHandler {
 		const id = ctx.getNodeParameter('projectId', itemIndex);
 		assertValidTodoistId('projectId', id, ctx.getNode());
 
-		const data = await todoistApiGetAllRequest(ctx, `/projects/${id}/collaborators`);
+		const data = await todoistApiRequest.call(ctx, 'GET', `/projects/${id}/collaborators`);
 		return { data };
 	}
 }
@@ -654,7 +651,7 @@ export class SectionGetAllHandler implements OperationHandler {
 			qs.project_id = filters.project_id;
 		}
 
-		const data = await todoistApiGetAllRequest(ctx, '/sections', qs);
+		const data = await todoistApiRequest.call(ctx, 'GET', '/sections', {}, qs);
 		return { data };
 	}
 }
@@ -732,7 +729,7 @@ export class CommentGetAllHandler implements OperationHandler {
 			qs.project_id = filters.project_id;
 		}
 
-		const data = await todoistApiGetAllRequest(ctx, '/comments', qs);
+		const data = await todoistApiRequest.call(ctx, 'GET', '/comments', {}, qs);
 		return { data };
 	}
 }
@@ -805,7 +802,7 @@ export class LabelGetHandler implements OperationHandler {
 
 export class LabelGetAllHandler implements OperationHandler {
 	async handleOperation(ctx: Context, _itemIndex: number): Promise<TodoistResponse> {
-		const data = await todoistApiGetAllRequest(ctx, '/labels');
+		const data = await todoistApiRequest.call(ctx, 'GET', '/labels');
 		return { data };
 	}
 }

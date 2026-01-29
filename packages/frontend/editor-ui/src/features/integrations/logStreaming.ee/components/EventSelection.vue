@@ -4,7 +4,8 @@ import { useLogStreamingStore } from '../logStreaming.store';
 import { computed } from 'vue';
 import { useI18n } from '@n8n/i18n';
 
-import { N8nCheckbox, N8nIcon, N8nTooltip } from '@n8n/design-system';
+import { ElCheckbox as Checkbox, type CheckboxValueType } from 'element-plus';
+import { N8nIcon, N8nTooltip } from '@n8n/design-system';
 
 interface Props {
 	destinationId?: string;
@@ -18,7 +19,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
 	input: [];
-	change: [payload: { name: string; node: string; value: boolean }];
+	change: [payload: { name: string; node: string; value: CheckboxValueType }];
 }>();
 
 const i18n = useI18n();
@@ -32,12 +33,12 @@ function onInput() {
 	emit('input');
 }
 
-function onCheckboxChecked(eventName: string, checked: boolean) {
-	logStreamingStore.setSelectedInGroup(props.destinationId, eventName, checked);
+function onCheckboxChecked(eventName: string, checked: CheckboxValueType) {
+	logStreamingStore.setSelectedInGroup(props.destinationId, eventName, Boolean(checked));
 }
 
-function anonymizeAuditMessagesChanged(value: boolean) {
-	logStreamingStore.items[props.destinationId].destination.anonymizeAuditMessages = value;
+function anonymizeAuditMessagesChanged(value: CheckboxValueType) {
+	logStreamingStore.items[props.destinationId].destination.anonymizeAuditMessages = Boolean(value);
 	emit('change', { name: 'anonymizeAuditMessages', node: props.destinationId, value });
 }
 
@@ -61,76 +62,58 @@ function groupLabelInfo(t: string): string | undefined {
 			shadow="never"
 		>
 			<!-- <template #header> -->
-			<N8nCheckbox
+			<Checkbox
 				:model-value="group.selected"
 				:indeterminate="group.indeterminate"
 				:disabled="readonly"
-				@update:model-value="
-					(value) => {
-						onInput();
-						onCheckboxChecked(group.name, value);
-					}
-				"
+				@update:model-value="onInput"
+				@change="onCheckboxChecked(group.name, $event)"
 			>
-				<template #label>
-					<strong>{{ groupLabelName(group.name) }}</strong>
-					<N8nTooltip
-						v-if="groupLabelInfo(group.name) !== undefined"
-						placement="top"
-						:content-class="$style.tooltipPopper"
-						class="ml-xs"
-					>
-						<N8nIcon icon="circle-help" size="small" class="ml-4xs" />
-						<template #content>
-							{{ groupLabelInfo(group.name) }}
-						</template>
-					</N8nTooltip>
-				</template>
-			</N8nCheckbox>
-			<N8nCheckbox
+				<strong>{{ groupLabelName(group.name) }}</strong>
+				<N8nTooltip
+					v-if="groupLabelInfo(group.name) !== undefined"
+					placement="top"
+					:popper-class="$style.tooltipPopper"
+					class="ml-xs"
+				>
+					<N8nIcon icon="circle-help" size="small" class="ml-4xs" />
+					<template #content>
+						{{ groupLabelInfo(group.name) }}
+					</template>
+				</N8nTooltip>
+			</Checkbox>
+			<Checkbox
 				v-if="group.name === 'n8n.audit'"
 				:model-value="anonymizeAuditMessages"
 				:disabled="readonly"
-				@update:model-value="
-					(value) => {
-						onInput();
-						anonymizeAuditMessagesChanged(value);
-					}
-				"
+				@update:model-value="onInput"
+				@change="anonymizeAuditMessagesChanged"
 			>
-				<template #label>
-					{{ i18n.baseText('settings.log-streaming.tab.events.anonymize') }}
-					<N8nTooltip placement="top" :content-class="$style.tooltipPopper">
-						<N8nIcon icon="circle-help" size="small" class="ml-4xs" />
-						<template #content>
-							{{ i18n.baseText('settings.log-streaming.tab.events.anonymize.info') }}
-						</template>
-					</N8nTooltip>
-				</template>
-			</N8nCheckbox>
+				{{ i18n.baseText('settings.log-streaming.tab.events.anonymize') }}
+				<N8nTooltip placement="top" :popper-class="$style.tooltipPopper">
+					<N8nIcon icon="circle-help" size="small" class="ml-4xs" />
+					<template #content>
+						{{ i18n.baseText('settings.log-streaming.tab.events.anonymize.info') }}
+					</template>
+				</N8nTooltip>
+			</Checkbox>
 			<!-- </template> -->
 			<ul :class="$style.eventList">
 				<li v-for="event in group.children" :key="event.name" :class="`${$style.eventListItem}`">
-					<N8nCheckbox
+					<Checkbox
 						:model-value="event.selected || group.selected"
 						:indeterminate="event.indeterminate"
 						:disabled="readonly"
-						@update:model-value="
-							(value) => {
-								onInput();
-								onCheckboxChecked(event.name, value);
-							}
-						"
+						@update:model-value="onInput"
+						@change="onCheckboxChecked(event.name, $event)"
 					>
-						<template #label>
-							{{ event.label }}
-							<N8nTooltip placement="top" :content-class="$style.tooltipPopper">
-								<template #content>
-									{{ event.name }}
-								</template>
-							</N8nTooltip>
-						</template>
-					</N8nCheckbox>
+						{{ event.label }}
+						<N8nTooltip placement="top" :popper-class="$style.tooltipPopper">
+							<template #content>
+								{{ event.name }}
+							</template>
+						</N8nTooltip>
+					</Checkbox>
 				</li>
 			</ul>
 		</div>

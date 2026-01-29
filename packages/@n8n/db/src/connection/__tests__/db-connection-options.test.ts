@@ -53,17 +53,32 @@ describe('DbConnectionOptions', () => {
 				dbConfig.type = 'sqlite';
 				dbConfig.sqlite = {
 					database: 'test.sqlite',
-					poolSize: 3,
+					poolSize: 0,
+					enableWAL: false,
 					executeVacuumOnStartup: false,
 				};
 			});
 
-			it('should return SQLite pooled connection options when type is sqlite', () => {
+			it('should return SQLite connection options when type is sqlite', () => {
+				const result = dbConnectionOptions.getOptions();
+
+				expect(result).toEqual({
+					type: 'sqlite',
+					enableWAL: false,
+					...commonOptions,
+					database: path.resolve(n8nFolder, 'test.sqlite'),
+					migrations: sqliteMigrations,
+				});
+			});
+
+			it('should return SQLite connection options with pooling when poolSize > 0', () => {
+				dbConfig.sqlite.poolSize = 5;
+
 				const result = dbConnectionOptions.getOptions();
 
 				expect(result).toEqual({
 					type: 'sqlite-pooled',
-					poolSize: 3,
+					poolSize: 5,
 					enableWAL: true,
 					acquireTimeout: 60_000,
 					destroyTimeout: 5_000,

@@ -1,4 +1,3 @@
-import type { RequestResponseMetadata } from '@utils/agent-execution';
 import { mock } from 'jest-mock-extended';
 import {
 	sleep,
@@ -9,6 +8,7 @@ import {
 } from 'n8n-workflow';
 
 import { toolsAgentExecute } from '../../agents/ToolsAgent/V3/execute';
+import type { RequestResponseMetadata } from '../../agents/ToolsAgent/V3/execute';
 import * as helpers from '../../agents/ToolsAgent/V3/helpers';
 
 // Mock the helper modules

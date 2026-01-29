@@ -4,6 +4,7 @@ import type {
 	INodeExecutionData,
 	INodeProperties,
 } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 
 import { updateDisplayOptions } from '@utils/utilities';
 
@@ -206,7 +207,7 @@ const displayOptions = {
 
 export const description = updateDisplayOptions(displayOptions, properties);
 
-export async function execute(this: IExecuteFunctions, index: number, _: INodeExecutionData[]) {
+export async function execute(this: IExecuteFunctions, index: number, items: INodeExecutionData[]) {
 	const additionalFields = this.getNodeParameter('additionalFields', index);
 	const toRecipients = this.getNodeParameter('toRecipients', index) as string;
 	const subject = this.getNodeParameter('subject', index) as string;
@@ -230,6 +231,23 @@ export async function execute(this: IExecuteFunctions, index: number, _: INodeEx
 
 		for (const attachment of attachments) {
 			const binaryPropertyName = attachment.binaryPropertyName as string;
+
+			if (items[index].binary === undefined) {
+				throw new NodeOperationError(this.getNode(), 'No binary data exists on item!', {
+					itemIndex: index,
+				});
+			}
+
+			if (
+				items[index].binary &&
+				(items[index].binary as IDataObject)[binaryPropertyName] === undefined
+			) {
+				throw new NodeOperationError(
+					this.getNode(),
+					`No binary data property "${binaryPropertyName}" does not exists on item!`,
+					{ itemIndex: index },
+				);
+			}
 
 			const binaryData = this.helpers.assertBinaryData(index, binaryPropertyName);
 

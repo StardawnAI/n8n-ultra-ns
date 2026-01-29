@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { computedAsync } from '@vueuse/core';
 import {
 	CHAT_TRIGGER_NODE_TYPE,
 	VIEWS,
@@ -129,12 +128,12 @@ const isWebhookNode = computed(() => {
 	return Boolean(node.value && node.value.type === WEBHOOK_NODE_TYPE);
 });
 
-const webhookHttpMethod = computedAsync(async () => {
+const webhookHttpMethod = computed(() => {
 	if (!node.value || !nodeType.value?.webhooks?.length) {
 		return undefined;
 	}
 
-	const httpMethod = await workflowHelpers.getWebhookExpressionValue(
+	const httpMethod = workflowHelpers.getWebhookExpressionValue(
 		nodeType.value.webhooks[0],
 		'httpMethod',
 		false,
@@ -144,16 +143,16 @@ const webhookHttpMethod = computedAsync(async () => {
 		return httpMethod.join(', ');
 	}
 
-	return httpMethod as string | undefined;
-}, undefined);
+	return httpMethod;
+});
 
-const webhookTestUrl = computedAsync(async () => {
+const webhookTestUrl = computed(() => {
 	if (!node.value || !nodeType.value?.webhooks?.length) {
 		return undefined;
 	}
 
-	return await workflowHelpers.getWebhookUrl(nodeType.value.webhooks[0], node.value, 'test');
-}, undefined);
+	return workflowHelpers.getWebhookUrl(nodeType.value.webhooks[0], node.value, 'test');
+});
 
 const isWebhookBasedNode = computed(() => {
 	return Boolean(nodeType.value?.webhooks?.length);

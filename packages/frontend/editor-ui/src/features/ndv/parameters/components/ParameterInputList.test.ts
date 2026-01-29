@@ -1,17 +1,16 @@
 import { createComponentRenderer } from '@/__tests__/render';
-import { mockedStore, getTooltip, hoverTooltipTrigger } from '@/__tests__/utils';
 import ParameterInputList from './ParameterInputList.vue';
 import { createTestingPinia } from '@pinia/testing';
+import { mockedStore } from '@/__tests__/utils';
 import {
 	createTestWorkflowObject,
 	createTestNode,
 	createMockNodeTypes,
 	mockLoadedNodeType,
 } from '@/__tests__/mocks';
-import { fireEvent, waitFor } from '@testing-library/vue';
+import { fireEvent } from '@testing-library/vue';
 import { useNDVStore } from '@/features/ndv/shared/ndv.store';
 import * as workflowHelpers from '@/app/composables/useWorkflowHelpers';
-import { flushPromises } from '@vue/test-utils';
 
 // Mock i18n to return translation keys instead of translated strings
 vi.mock('@n8n/i18n', () => {
@@ -47,6 +46,7 @@ import {
 	TEST_NODE_VALUES,
 	TEST_NODE_WITH_ISSUES,
 	FIXED_COLLECTION_PARAMETERS,
+	TEST_ISSUE,
 } from './ParameterInputList.test.constants';
 import { FORM_NODE_TYPE, FORM_TRIGGER_NODE_TYPE, NodeConnectionTypes } from 'n8n-workflow';
 import type { INodeProperties } from 'n8n-workflow';
@@ -103,11 +103,7 @@ describe('ParameterInputList', () => {
 		workflowStore = mockedStore(useWorkflowsStore);
 	});
 
-	afterEach(async () => {
-		await flushPromises();
-	});
-
-	it('renders', async () => {
+	it('renders', () => {
 		ndvStore.activeNode = TEST_NODE_NO_ISSUES;
 		expect(() =>
 			renderComponent({
@@ -117,86 +113,72 @@ describe('ParameterInputList', () => {
 				},
 			}),
 		).not.toThrow();
-		await flushPromises();
 	});
 
-	it('renders fixed collection inputs correctly', async () => {
+	it('renders fixed collection inputs correctly', () => {
 		ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-		const { getAllByTestId, findByText } = renderComponent({
+		const { getAllByTestId, getByText } = renderComponent({
 			props: {
 				parameters: TEST_PARAMETERS,
 				nodeValues: TEST_NODE_VALUES,
 			},
 		});
-		await flushPromises();
 
 		// Should render labels for all parameters
-		for (const parameter of FIXED_COLLECTION_PARAMETERS) {
-			expect(await findByText(parameter.displayName)).toBeInTheDocument();
-		}
+		FIXED_COLLECTION_PARAMETERS.forEach((parameter) => {
+			expect(getByText(parameter.displayName)).toBeInTheDocument();
+		});
 
 		// Should render input placeholders for all fixed collection parameters
 		expect(getAllByTestId('suspense-stub')).toHaveLength(FIXED_COLLECTION_PARAMETERS.length);
 	});
 
-	it('renders fixed collection inputs correctly with issues', async () => {
+	it('renders fixed collection inputs correctly with issues', () => {
 		ndvStore.activeNode = TEST_NODE_WITH_ISSUES;
-		const { findByText, getByTestId, container } = renderComponent({
+		const { getByText, getByTestId } = renderComponent({
 			props: {
 				parameters: TEST_PARAMETERS,
 				nodeValues: TEST_NODE_VALUES,
 			},
 		});
-		await flushPromises();
 
 		// Should render labels for all parameters
-		for (const parameter of FIXED_COLLECTION_PARAMETERS) {
-			expect(await findByText(parameter.displayName)).toBeInTheDocument();
-		}
+		FIXED_COLLECTION_PARAMETERS.forEach((parameter) => {
+			expect(getByText(parameter.displayName)).toBeInTheDocument();
+		});
 		// Should render error message for fixed collection parameter
 		expect(
 			getByTestId(`${FIXED_COLLECTION_PARAMETERS[0].name}-parameter-input-issues-container`),
 		).toBeInTheDocument();
-
-		// Verify issue icon is present and tooltip shows issue text on hover
-		const issueIcon = container.querySelector('[data-icon="triangle-alert"]');
-		if (!issueIcon) throw new Error('Issue icon not found');
-		expect(issueIcon).toBeInTheDocument();
-
-		await hoverTooltipTrigger(issueIcon);
-		await waitFor(() => expect(getTooltip()).toHaveTextContent('At least 1 field is required.'));
+		expect(getByText(TEST_ISSUE)).toBeInTheDocument();
 	});
 
-	it('renders notice correctly', async () => {
+	it('renders notice correctly', () => {
 		ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-		const { findByText } = renderComponent({
+		const { getByText } = renderComponent({
 			props: {
 				parameters: TEST_PARAMETERS,
 				nodeValues: TEST_NODE_VALUES,
 			},
 		});
-		await flushPromises();
-		expect(await findByText('Note: This is a notice with')).toBeInTheDocument();
-		expect(await findByText('notice link')).toBeInTheDocument();
-		const link = await findByText('notice link');
-		expect(link.getAttribute('href')).toEqual('notice.n8n.io');
+		expect(getByText('Note: This is a notice with')).toBeInTheDocument();
+		expect(getByText('notice link')).toBeInTheDocument();
+		expect(getByText('notice link').getAttribute('href')).toEqual('notice.n8n.io');
 	});
 
-	it('renders callout correctly', async () => {
+	it('renders callout correctly', () => {
 		ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-		const { getByTestId, findByText } = renderComponent({
+		const { getByTestId, getByText } = renderComponent({
 			props: {
 				parameters: TEST_PARAMETERS,
 				nodeValues: TEST_NODE_VALUES,
 			},
 		});
-		await flushPromises();
 
-		expect(await findByText('Tip: This is a callout with')).toBeInTheDocument();
-		expect(await findByText('callout link')).toBeInTheDocument();
-		const link = await findByText('callout link');
-		expect(link.getAttribute('href')).toEqual('callout.n8n.io');
-		expect(await findByText('and action!')).toBeInTheDocument();
+		expect(getByText('Tip: This is a callout with')).toBeInTheDocument();
+		expect(getByText('callout link')).toBeInTheDocument();
+		expect(getByText('callout link').getAttribute('href')).toEqual('callout.n8n.io');
+		expect(getByText('and action!')).toBeInTheDocument();
 		expect(getByTestId('callout-dismiss-icon')).toBeInTheDocument();
 	});
 
@@ -215,7 +197,7 @@ describe('ParameterInputList', () => {
 			workflowHelpersMock.mockRestore();
 		});
 
-		it('should show triggerNotice if Form Trigger not connected', async () => {
+		it('should show triggerNotice if Form Trigger not connected', () => {
 			ndvStore.activeNode = { name: 'From', type: FORM_NODE_TYPE, parameters: {} } as INodeUi;
 
 			workflowHelpersMock.mockReturnValue({
@@ -227,14 +209,14 @@ describe('ParameterInputList', () => {
 				}),
 			});
 
-			const { findByText } = renderComponent({
+			const { getByText } = renderComponent({
 				props: {
 					parameters: formParameters,
 					nodeValues: {},
 				},
 			});
 
-			expect(await findByText('TRIGGER NOTICE')).toBeInTheDocument();
+			expect(getByText('TRIGGER NOTICE')).toBeInTheDocument();
 		});
 
 		it('should not show triggerNotice if Form Trigger is connected', () => {
@@ -277,9 +259,9 @@ describe('ParameterInputList', () => {
 	 * Covers: hideDelete, indent, isReadOnly, hiddenIssuesInputs, path
 	 */
 	describe('Props', () => {
-		it('should handle hideDelete prop', async () => {
+		it('should handle hideDelete prop', () => {
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { findByTitle } = renderComponent({
+			const { queryByTitle } = renderComponent({
 				props: {
 					parameters: TEST_PARAMETERS,
 					nodeValues: TEST_NODE_VALUES,
@@ -287,7 +269,7 @@ describe('ParameterInputList', () => {
 				},
 			});
 
-			expect(await findByTitle('parameterInputList.delete')).toBeInTheDocument();
+			expect(queryByTitle('parameterInputList.delete')).toBeInTheDocument();
 		});
 
 		it('should apply indent class when indent prop is true', () => {
@@ -317,9 +299,9 @@ describe('ParameterInputList', () => {
 			expect(queryByTitle('parameterInputList.delete')).not.toBeInTheDocument();
 		});
 
-		it('should handle hiddenIssuesInputs prop', async () => {
+		it('should handle hiddenIssuesInputs prop', () => {
 			ndvStore.activeNode = TEST_NODE_WITH_ISSUES;
-			const { findByTestId } = renderComponent({
+			const { getByTestId } = renderComponent({
 				props: {
 					parameters: TEST_PARAMETERS,
 					nodeValues: TEST_NODE_VALUES,
@@ -330,9 +312,7 @@ describe('ParameterInputList', () => {
 			// Issues container still exists but should be passed to child component
 			// The hiddenIssuesInputs prop is passed down to control display
 			expect(
-				await findByTestId(
-					`${FIXED_COLLECTION_PARAMETERS[0].name}-parameter-input-issues-container`,
-				),
+				getByTestId(`${FIXED_COLLECTION_PARAMETERS[0].name}-parameter-input-issues-container`),
 			).toBeInTheDocument();
 		});
 
@@ -384,7 +364,7 @@ describe('ParameterInputList', () => {
 			];
 
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { findByTestId, emitted } = renderWithInteractiveStub({
+			const { getByTestId, emitted } = renderWithInteractiveStub({
 				props: {
 					parameters: stringParameter,
 					nodeValues: { testString: '' },
@@ -402,7 +382,7 @@ describe('ParameterInputList', () => {
 			});
 
 			// Click on the stubbed ParameterInputFull to trigger the update event
-			const parameterInput = await findByTestId('parameter-input-clickable');
+			const parameterInput = getByTestId('parameter-input-clickable');
 			await fireEvent.click(parameterInput);
 
 			expect(emitted('valueChanged')).toBeDefined();
@@ -422,7 +402,7 @@ describe('ParameterInputList', () => {
 			];
 
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { findByTestId, emitted } = renderWithInteractiveStub({
+			const { getByTestId, emitted } = renderWithInteractiveStub({
 				props: {
 					parameters: stringParameter,
 					nodeValues: { testString: '' },
@@ -440,7 +420,7 @@ describe('ParameterInputList', () => {
 			});
 
 			// Trigger blur on the stubbed ParameterInputFull
-			const parameterInput = await findByTestId('parameter-input-blurable');
+			const parameterInput = getByTestId('parameter-input-blurable');
 			await fireEvent.blur(parameterInput);
 
 			expect(emitted('parameterBlur')).toBeDefined();
@@ -465,7 +445,6 @@ describe('ParameterInputList', () => {
 					nodeValues: TEST_NODE_VALUES,
 				},
 			});
-			await flushPromises();
 
 			// Find and click the activate link within the notice
 			const activateLink = container.querySelector('a[data-key="activate"]');
@@ -503,17 +482,17 @@ describe('ParameterInputList', () => {
 			expect(queryByText('Test Fixed Collection')).not.toBeInTheDocument();
 		});
 
-		it('should show all parameters when displayOptions are met', async () => {
+		it('should show all parameters when displayOptions are met', () => {
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { findByText } = renderComponent({
+			const { getByText } = renderComponent({
 				props: {
 					parameters: TEST_PARAMETERS,
 					nodeValues: TEST_NODE_VALUES,
 				},
 			});
 
-			expect(await findByText('Test Fixed Collection')).toBeInTheDocument();
-			expect(await findByText('Note: This is a notice with')).toBeInTheDocument();
+			expect(getByText('Test Fixed Collection')).toBeInTheDocument();
+			expect(getByText('Note: This is a notice with')).toBeInTheDocument();
 		});
 
 		it('should handle empty parameters array', () => {
@@ -534,7 +513,7 @@ describe('ParameterInputList', () => {
 	 * Tests the complex logic for where credentials should appear in the parameter list.
 	 */
 	describe('Credentials Handling', () => {
-		it('should position credentials parameter correctly', async () => {
+		it('should position credentials parameter correctly', () => {
 			const parametersWithCredentials: INodeProperties[] = [
 				{
 					displayName: 'Credentials',
@@ -546,22 +525,21 @@ describe('ParameterInputList', () => {
 			];
 
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { container, findByText } = renderComponent({
+			const { container, getByText } = renderComponent({
 				props: {
 					parameters: parametersWithCredentials,
 					nodeValues: TEST_NODE_VALUES,
 				},
 			});
-			await flushPromises();
 
 			// Credentials parameters are skipped in ParameterInputList (rendered via slot by parent)
 			// But the credentialsParameterIndex is computed for slot positioning
 			// Other parameters should be rendered
 			expect(container.querySelector('.parameter-input-list-wrapper')).toBeInTheDocument();
-			expect(await findByText('Test Fixed Collection')).toBeInTheDocument();
+			expect(getByText('Test Fixed Collection')).toBeInTheDocument();
 		});
 
-		it('should handle credentials parameter with dependencies', async () => {
+		it('should handle credentials parameter with dependencies', () => {
 			const parametersWithDependencies: INodeProperties[] = [
 				{
 					displayName: 'Auth Type',
@@ -588,7 +566,6 @@ describe('ParameterInputList', () => {
 					nodeValues: TEST_NODE_VALUES,
 				},
 			});
-			await flushPromises();
 
 			// Auth type parameter is rendered through ParameterInputFull stub (no visible label)
 			// Credentials parameters are skipped in ParameterInputList (rendered via slot by parent)
@@ -604,7 +581,7 @@ describe('ParameterInputList', () => {
 	 * curlImport, and multipleValues parameters.
 	 */
 	describe('Different Parameter Types', () => {
-		it('should render button parameter', async () => {
+		it('should render button parameter', () => {
 			const buttonParameters: INodeProperties[] = [
 				{
 					displayName: 'Test Button',
@@ -615,19 +592,18 @@ describe('ParameterInputList', () => {
 			];
 
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { container, findByText } = renderComponent({
+			const { container, getByText } = renderComponent({
 				props: {
 					parameters: buttonParameters,
 					nodeValues: TEST_NODE_VALUES,
 				},
 			});
-			await flushPromises();
 
 			expect(container.querySelector('.parameter-item')).toBeInTheDocument();
-			expect(await findByText('Test Button')).toBeInTheDocument();
+			expect(getByText('Test Button')).toBeInTheDocument();
 		});
 
-		it('should render collection parameter', async () => {
+		it('should render collection parameter', () => {
 			const collectionParameters: INodeProperties[] = [
 				{
 					displayName: 'Test Collection',
@@ -647,17 +623,17 @@ describe('ParameterInputList', () => {
 			];
 
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { findByText } = renderComponent({
+			const { getByText } = renderComponent({
 				props: {
 					parameters: collectionParameters,
 					nodeValues: TEST_NODE_VALUES,
 				},
 			});
 
-			expect(await findByText('Test Collection')).toBeInTheDocument();
+			expect(getByText('Test Collection')).toBeInTheDocument();
 		});
 
-		it('should render resourceMapper parameter', async () => {
+		it('should render resourceMapper parameter', () => {
 			const resourceMapperParameters: INodeProperties[] = [
 				{
 					displayName: 'Resource Mapper',
@@ -680,20 +656,19 @@ describe('ParameterInputList', () => {
 			];
 
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { container, findByTestId } = renderComponent({
+			const { container, getByTestId } = renderComponent({
 				props: {
 					parameters: resourceMapperParameters,
 					nodeValues: { resourceMapper: {} },
 				},
 			});
-			await flushPromises();
 
 			// ResourceMapper is rendered as a standalone component without label wrapper
 			expect(container.querySelector('.parameter-input-list-wrapper')).toBeInTheDocument();
-			expect(await findByTestId('parameter-item')).toBeInTheDocument();
+			expect(getByTestId('parameter-item')).toBeInTheDocument();
 		});
 
-		it('should render filter parameter', async () => {
+		it('should render filter parameter', () => {
 			const filterParameters: INodeProperties[] = [
 				{
 					displayName: 'Filters',
@@ -711,20 +686,19 @@ describe('ParameterInputList', () => {
 			];
 
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { container, findByTestId } = renderComponent({
+			const { container, getByTestId } = renderComponent({
 				props: {
 					parameters: filterParameters,
 					nodeValues: { filters: {} },
 				},
 			});
-			await flushPromises();
 
 			// FilterConditions is rendered as a standalone component without label wrapper
 			expect(container.querySelector('.parameter-input-list-wrapper')).toBeInTheDocument();
-			expect(await findByTestId('parameter-item')).toBeInTheDocument();
+			expect(getByTestId('parameter-item')).toBeInTheDocument();
 		});
 
-		it('should render assignmentCollection parameter', async () => {
+		it('should render assignmentCollection parameter', () => {
 			const assignmentParameters: INodeProperties[] = [
 				{
 					displayName: 'Assignments',
@@ -735,20 +709,19 @@ describe('ParameterInputList', () => {
 			];
 
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { container, findByTestId } = renderComponent({
+			const { container, getByTestId } = renderComponent({
 				props: {
 					parameters: assignmentParameters,
 					nodeValues: { assignments: {} },
 				},
 			});
-			await flushPromises();
 
 			// AssignmentCollection is rendered as a standalone component without label wrapper
 			expect(container.querySelector('.parameter-input-list-wrapper')).toBeInTheDocument();
-			expect(await findByTestId('parameter-item')).toBeInTheDocument();
+			expect(getByTestId('parameter-item')).toBeInTheDocument();
 		});
 
-		it('should render curlImport parameter', async () => {
+		it('should render curlImport parameter', () => {
 			const curlParameters: INodeProperties[] = [
 				{
 					displayName: 'Import cURL',
@@ -759,20 +732,19 @@ describe('ParameterInputList', () => {
 			];
 
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { container, findByTestId } = renderComponent({
+			const { container, getByTestId } = renderComponent({
 				props: {
 					parameters: curlParameters,
 					nodeValues: TEST_NODE_VALUES,
 				},
 			});
-			await flushPromises();
 
 			// ImportCurlParameter is rendered as a standalone component without label wrapper
 			expect(container.querySelector('.parameter-input-list-wrapper')).toBeInTheDocument();
-			expect(await findByTestId('parameter-item')).toBeInTheDocument();
+			expect(getByTestId('parameter-item')).toBeInTheDocument();
 		});
 
-		it('should render multipleValues parameter', async () => {
+		it('should render multipleValues parameter', () => {
 			const multipleValuesParameters: INodeProperties[] = [
 				{
 					displayName: 'Multiple Values',
@@ -792,7 +764,6 @@ describe('ParameterInputList', () => {
 					nodeValues: { multipleValues: ['value1', 'value2'] },
 				},
 			});
-			await flushPromises();
 
 			expect(container.querySelector('.parameter-item')).toBeInTheDocument();
 		});
@@ -803,19 +774,19 @@ describe('ParameterInputList', () => {
 	 * Includes: RAG starter, AI agent, and pre-built agents callouts.
 	 */
 	describe('Callout Visibility', () => {
-		it('should show callout when not dismissed', async () => {
+		it('should show callout when not dismissed', () => {
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { findByText } = renderComponent({
+			const { getByText } = renderComponent({
 				props: {
 					parameters: TEST_PARAMETERS,
 					nodeValues: TEST_NODE_VALUES,
 				},
 			});
 
-			expect(await findByText('Tip: This is a callout with')).toBeInTheDocument();
+			expect(getByText('Tip: This is a callout with')).toBeInTheDocument();
 		});
 
-		it('should handle ragStarterCallout visibility', async () => {
+		it('should handle ragStarterCallout visibility', () => {
 			const ragCalloutParameters: INodeProperties[] = [
 				{
 					displayName: 'RAG Starter Callout',
@@ -833,18 +804,18 @@ describe('ParameterInputList', () => {
 			];
 
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { findByText } = renderComponent({
+			const { getByText } = renderComponent({
 				props: {
 					parameters: ragCalloutParameters,
 					nodeValues: TEST_NODE_VALUES,
 				},
 			});
 
-			expect(await findByText('RAG Starter Callout')).toBeInTheDocument();
-			expect(await findByText('Learn more')).toBeInTheDocument();
+			expect(getByText('RAG Starter Callout')).toBeInTheDocument();
+			expect(getByText('Learn more')).toBeInTheDocument();
 		});
 
-		it('should handle aiAgentStarterCallout visibility', async () => {
+		it('should handle aiAgentStarterCallout visibility', () => {
 			const agentCalloutParameters: INodeProperties[] = [
 				{
 					displayName: 'AI Agent Starter Callout',
@@ -855,14 +826,14 @@ describe('ParameterInputList', () => {
 			];
 
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { findByText } = renderComponent({
+			const { getByText } = renderComponent({
 				props: {
 					parameters: agentCalloutParameters,
 					nodeValues: TEST_NODE_VALUES,
 				},
 			});
 
-			expect(await findByText('AI Agent Starter Callout')).toBeInTheDocument();
+			expect(getByText('AI Agent Starter Callout')).toBeInTheDocument();
 		});
 	});
 
@@ -905,7 +876,7 @@ describe('ParameterInputList', () => {
 			},
 		];
 
-		it('should show formResponseModeNotice when Form node is connected', async () => {
+		it('should show formResponseModeNotice when Form node is connected', () => {
 			ndvStore.activeNode = {
 				name: 'Form Trigger',
 				type: FORM_TRIGGER_NODE_TYPE,
@@ -931,7 +902,7 @@ describe('ParameterInputList', () => {
 				nodeTypes: formWorkflowNodeTypes,
 			});
 
-			const { findByText } = renderComponent({
+			const { getByText } = renderComponent({
 				props: {
 					parameters: formTriggerParameters,
 					nodeValues: {},
@@ -939,11 +910,11 @@ describe('ParameterInputList', () => {
 			});
 
 			expect(
-				await findByText('On submission, the user will be taken to the next form node'),
+				getByText('On submission, the user will be taken to the next form node'),
 			).toBeInTheDocument();
 		});
 
-		it('should filter respondWithOptions when Form node is connected', async () => {
+		it('should filter respondWithOptions when Form node is connected', () => {
 			ndvStore.activeNode = {
 				name: 'Form Trigger',
 				type: FORM_TRIGGER_NODE_TYPE,
@@ -975,7 +946,6 @@ describe('ParameterInputList', () => {
 					nodeValues: {},
 				},
 			});
-			await flushPromises();
 
 			// Component should render with Form Trigger transformations applied
 			expect(container.querySelector('.parameter-input-list-wrapper')).toBeInTheDocument();
@@ -983,7 +953,7 @@ describe('ParameterInputList', () => {
 			expect(getAllByTestId('parameter-item').length).toBeGreaterThan(0);
 		});
 
-		it('should not modify parameters when Form node is not connected', async () => {
+		it('should not modify parameters when Form node is not connected', () => {
 			ndvStore.activeNode = {
 				name: 'Form Trigger',
 				type: FORM_TRIGGER_NODE_TYPE,
@@ -1007,7 +977,6 @@ describe('ParameterInputList', () => {
 					nodeValues: {},
 				},
 			});
-			await flushPromises();
 
 			// All parameters should be rendered when Form node is not connected
 			expect(container.querySelector('.parameter-input-list-wrapper')).toBeInTheDocument();
@@ -1051,7 +1020,7 @@ describe('ParameterInputList', () => {
 			},
 		];
 
-		it('should filter options when Form Trigger is connected', async () => {
+		it('should filter options when Form Trigger is connected', () => {
 			ndvStore.activeNode = {
 				id: 'wait-123',
 				name: 'Wait',
@@ -1088,7 +1057,7 @@ describe('ParameterInputList', () => {
 				nodeTypes: formWorkflowNodeTypes,
 			});
 
-			const { findByText, queryByText } = renderComponent({
+			const { getByText, queryByText } = renderComponent({
 				props: {
 					parameters: waitParameters,
 					nodeValues: { resume: 'form' },
@@ -1096,13 +1065,13 @@ describe('ParameterInputList', () => {
 			});
 
 			// Options collection should be rendered
-			expect(await findByText('Options')).toBeInTheDocument();
+			expect(getByText('Options')).toBeInTheDocument();
 			// respondWithOptions and webhookSuffix should be filtered out when Form Trigger is connected
 			expect(queryByText('Respond With Options')).not.toBeInTheDocument();
 			expect(queryByText('Webhook Suffix')).not.toBeInTheDocument();
 		});
 
-		it('should not modify parameters when Form Trigger is not connected', async () => {
+		it('should not modify parameters when Form Trigger is not connected', () => {
 			ndvStore.activeNode = {
 				id: 'wait-123',
 				name: 'Wait',
@@ -1124,7 +1093,7 @@ describe('ParameterInputList', () => {
 				nodeTypes: formWorkflowNodeTypes,
 			});
 
-			const { findByText } = renderComponent({
+			const { getByText } = renderComponent({
 				props: {
 					parameters: waitParameters,
 					nodeValues: { resume: 'form' },
@@ -1132,7 +1101,7 @@ describe('ParameterInputList', () => {
 			});
 
 			// Options collection should be rendered when Form Trigger is not connected
-			expect(await findByText('Options')).toBeInTheDocument();
+			expect(getByText('Options')).toBeInTheDocument();
 		});
 	});
 
@@ -1141,7 +1110,19 @@ describe('ParameterInputList', () => {
 	 * Tests issue icons, tooltips, and hiddenIssuesInputs functionality.
 	 */
 	describe('Issues Display', () => {
-		it('should display issues for fixedCollection parameters', async () => {
+		it('should display issues for fixedCollection parameters', () => {
+			ndvStore.activeNode = TEST_NODE_WITH_ISSUES;
+			const { getByText } = renderComponent({
+				props: {
+					parameters: TEST_PARAMETERS,
+					nodeValues: TEST_NODE_VALUES,
+				},
+			});
+
+			expect(getByText(TEST_ISSUE)).toBeInTheDocument();
+		});
+
+		it('should display issue icon in label for supported parameter types', () => {
 			ndvStore.activeNode = TEST_NODE_WITH_ISSUES;
 			const { container } = renderComponent({
 				props: {
@@ -1149,51 +1130,24 @@ describe('ParameterInputList', () => {
 					nodeValues: TEST_NODE_VALUES,
 				},
 			});
-			await flushPromises();
-
-			// Verify issue icon is present and tooltip shows issue text on hover
-			const issueIcon = container.querySelector('[data-icon="triangle-alert"]');
-			if (!issueIcon) throw new Error('Issue icon not found');
-			expect(issueIcon).toBeInTheDocument();
-
-			await hoverTooltipTrigger(issueIcon);
-			await waitFor(() => expect(getTooltip()).toHaveTextContent('At least 1 field is required.'));
-		});
-
-		it('should display issue icon in label for supported parameter types', async () => {
-			ndvStore.activeNode = TEST_NODE_WITH_ISSUES;
-			const { container } = renderComponent({
-				props: {
-					parameters: TEST_PARAMETERS,
-					nodeValues: TEST_NODE_VALUES,
-				},
-			});
-			await flushPromises();
 
 			const issueIcon = container.querySelector('[data-icon="triangle-alert"]');
 			expect(issueIcon).toBeInTheDocument();
 		});
 
-		it('should not display issues when parameter is in hiddenIssuesInputs', async () => {
+		it('should not display issues when parameter is in hiddenIssuesInputs', () => {
 			ndvStore.activeNode = TEST_NODE_WITH_ISSUES;
-			const { container } = renderComponent({
+			const { getByText } = renderComponent({
 				props: {
 					parameters: TEST_PARAMETERS,
 					nodeValues: TEST_NODE_VALUES,
 					hiddenIssuesInputs: [FIXED_COLLECTION_PARAMETERS[0].name],
 				},
 			});
-			await flushPromises();
 
 			// Issue text still appears because hiddenIssuesInputs is passed to child component
 			// The actual hiding logic is in the child component (ParameterInputFull)
-			// Verify issue icon is present and tooltip shows issue text on hover
-			const issueIcon = container.querySelector('[data-icon="triangle-alert"]');
-			if (!issueIcon) throw new Error('Issue icon not found');
-			expect(issueIcon).toBeInTheDocument();
-
-			await hoverTooltipTrigger(issueIcon);
-			await waitFor(() => expect(getTooltip()).toHaveTextContent('At least 1 field is required.'));
+			expect(getByText(TEST_ISSUE)).toBeInTheDocument();
 		});
 	});
 
@@ -1202,7 +1156,7 @@ describe('ParameterInputList', () => {
 	 * Validates complex logic for slot placement relative to credentials and callouts.
 	 */
 	describe('Slot Positioning', () => {
-		it('should position slot at credentials index when present', async () => {
+		it('should position slot at credentials index when present', () => {
 			const parametersWithCredentials: INodeProperties[] = [
 				TEST_PARAMETERS[0],
 				{
@@ -1215,25 +1169,24 @@ describe('ParameterInputList', () => {
 			];
 
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { container, findByText } = renderComponent({
+			const { container, getByText } = renderComponent({
 				props: {
 					parameters: parametersWithCredentials,
 					nodeValues: TEST_NODE_VALUES,
 				},
 			});
-			await flushPromises();
 
 			// Credentials parameters are skipped in render (handled via slot by parent)
 			// But slot positioning is computed based on credentials index
 			expect(container.querySelector('.parameter-input-list-wrapper')).toBeInTheDocument();
 			// Other parameters should be rendered
-			expect(await findByText('Test Fixed Collection')).toBeInTheDocument();
-			expect(await findByText('Note: This is a notice with')).toBeInTheDocument();
+			expect(getByText('Test Fixed Collection')).toBeInTheDocument();
+			expect(getByText('Note: This is a notice with')).toBeInTheDocument();
 		});
 
-		it('should position slot after callout when credentials not present', async () => {
+		it('should position slot after callout when credentials not present', () => {
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { findByText, findByTestId } = renderComponent({
+			const { getByText, getByTestId } = renderComponent({
 				props: {
 					parameters: TEST_PARAMETERS,
 					nodeValues: TEST_NODE_VALUES,
@@ -1241,11 +1194,11 @@ describe('ParameterInputList', () => {
 			});
 
 			// Parameters should be rendered in expected order
-			expect(await findByText('Test Fixed Collection')).toBeInTheDocument();
-			expect(await findByText('Note: This is a notice with')).toBeInTheDocument();
-			expect(await findByText('Tip: This is a callout with')).toBeInTheDocument();
+			expect(getByText('Test Fixed Collection')).toBeInTheDocument();
+			expect(getByText('Note: This is a notice with')).toBeInTheDocument();
+			expect(getByText('Tip: This is a callout with')).toBeInTheDocument();
 			// Callout dismiss icon should be present for the callout
-			expect(await findByTestId('callout-dismiss-icon')).toBeInTheDocument();
+			expect(getByTestId('callout-dismiss-icon')).toBeInTheDocument();
 		});
 	});
 
@@ -1254,9 +1207,9 @@ describe('ParameterInputList', () => {
 	 * Ensures async components load correctly without blocking the UI.
 	 */
 	describe('Async Loading', () => {
-		it('should show loading state for lazy components', async () => {
+		it('should show loading state for lazy components', () => {
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { findByText } = renderComponent({
+			const { getByText } = renderComponent({
 				props: {
 					parameters: TEST_PARAMETERS,
 					nodeValues: TEST_NODE_VALUES,
@@ -1264,7 +1217,7 @@ describe('ParameterInputList', () => {
 			});
 
 			// Check for suspense stub which wraps lazy components
-			expect(await findByText('Test Fixed Collection')).toBeInTheDocument();
+			expect(getByText('Test Fixed Collection')).toBeInTheDocument();
 		});
 	});
 
@@ -1273,7 +1226,7 @@ describe('ParameterInputList', () => {
 	 * Includes: mixed parameter types, nested paths, missing nodes, custom classes.
 	 */
 	describe('Complex Scenarios', () => {
-		it('should handle multiple parameter types in same list', async () => {
+		it('should handle multiple parameter types in same list', () => {
 			const mixedParameters: INodeProperties[] = [
 				{
 					displayName: 'String Parameter',
@@ -1303,19 +1256,18 @@ describe('ParameterInputList', () => {
 			];
 
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { container, findByText } = renderComponent({
+			const { container, getByText } = renderComponent({
 				props: {
 					parameters: mixedParameters,
 					nodeValues: TEST_NODE_VALUES,
 				},
 			});
-			await flushPromises();
 
 			// String parameter is rendered through stub
 			expect(container.querySelector('[path="stringParam"]')).toBeInTheDocument();
-			expect(await findByText('Notice')).toBeInTheDocument();
-			expect(await findByText('Fixed Collection')).toBeInTheDocument();
-			expect(await findByText('Button')).toBeInTheDocument();
+			expect(getByText('Notice')).toBeInTheDocument();
+			expect(getByText('Fixed Collection')).toBeInTheDocument();
+			expect(getByText('Button')).toBeInTheDocument();
 		});
 
 		it('should handle nested paths correctly', () => {
@@ -1334,23 +1286,22 @@ describe('ParameterInputList', () => {
 			expect(container.querySelector('.parameter-input-list-wrapper')).toBeInTheDocument();
 		});
 
-		it('should render when node is not provided', async () => {
+		it('should render when node is not provided', () => {
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { container, findByText } = renderComponent({
+			const { container, getByText } = renderComponent({
 				props: {
 					parameters: TEST_PARAMETERS,
 					nodeValues: TEST_NODE_VALUES,
 					node: undefined,
 				},
 			});
-			await flushPromises();
 
 			// Component should render parameters even without explicit node prop
 			expect(container.querySelector('.parameter-input-list-wrapper')).toBeInTheDocument();
-			expect(await findByText('Test Fixed Collection')).toBeInTheDocument();
+			expect(getByText('Test Fixed Collection')).toBeInTheDocument();
 		});
 
-		it('should handle parameters with containerClass', async () => {
+		it('should handle parameters with containerClass', () => {
 			const parametersWithClass: INodeProperties[] = [
 				{
 					displayName: 'Custom Notice',
@@ -1370,7 +1321,6 @@ describe('ParameterInputList', () => {
 					nodeValues: TEST_NODE_VALUES,
 				},
 			});
-			await flushPromises();
 
 			expect(container.querySelector('.custom-container-class')).toBeInTheDocument();
 		});
@@ -1383,7 +1333,7 @@ describe('ParameterInputList', () => {
 	describe('Performance-Related Behavior', () => {
 		it('should handle rapid parameter changes', async () => {
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { rerender, findByText } = renderComponent({
+			const { rerender, getByText } = renderComponent({
 				props: {
 					parameters: TEST_PARAMETERS,
 					nodeValues: TEST_NODE_VALUES,
@@ -1402,10 +1352,10 @@ describe('ParameterInputList', () => {
 			});
 
 			// Component should still render correctly after rapid updates
-			expect(await findByText('Test Fixed Collection')).toBeInTheDocument();
+			expect(getByText('Test Fixed Collection')).toBeInTheDocument();
 		});
 
-		it('should maintain stable keys for parameters', async () => {
+		it('should maintain stable keys for parameters', () => {
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
 			const { container } = renderComponent({
 				props: {
@@ -1413,13 +1363,12 @@ describe('ParameterInputList', () => {
 					nodeValues: TEST_NODE_VALUES,
 				},
 			});
-			await flushPromises();
 
 			const parameterItems = container.querySelectorAll('[data-test-id="parameter-item"]');
 			expect(parameterItems.length).toBeGreaterThan(0);
 		});
 
-		it('should handle large parameter arrays', async () => {
+		it('should handle large parameter arrays', () => {
 			const largeParameterArray: INodeProperties[] = Array.from({ length: 50 }, (_, i) => ({
 				displayName: `Parameter ${i}`,
 				name: `param${i}`,
@@ -1434,7 +1383,6 @@ describe('ParameterInputList', () => {
 					nodeValues: TEST_NODE_VALUES,
 				},
 			});
-			await flushPromises();
 
 			expect(container.querySelectorAll('[data-test-id="parameter-item"]').length).toBe(50);
 		});
@@ -1445,25 +1393,24 @@ describe('ParameterInputList', () => {
 	 * Ensures the component degrades gracefully when async loading fails.
 	 */
 	describe('Async Loading Errors', () => {
-		it('should handle async loading errors gracefully', async () => {
+		it('should handle async loading errors gracefully', () => {
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { container, findByText, findByTestId } = renderComponent({
+			const { container, getByText, getByTestId } = renderComponent({
 				props: {
 					parameters: TEST_PARAMETERS,
 					nodeValues: TEST_NODE_VALUES,
 				},
 			});
-			await flushPromises();
 
 			// Component should render even if async components fail
 			expect(container.querySelector('.parameter-input-list-wrapper')).toBeInTheDocument();
 			// Suspense stub should wrap async components
-			expect(await findByTestId('suspense-stub')).toBeInTheDocument();
+			expect(getByTestId('suspense-stub')).toBeInTheDocument();
 			// Parameter labels should still be visible
-			expect(await findByText('Test Fixed Collection')).toBeInTheDocument();
+			expect(getByText('Test Fixed Collection')).toBeInTheDocument();
 		});
 
-		it('should render lazy collection components', async () => {
+		it('should render lazy collection components', () => {
 			const collectionParameters: INodeProperties[] = [
 				{
 					displayName: 'Test Collection',
@@ -1475,7 +1422,7 @@ describe('ParameterInputList', () => {
 			];
 
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { findByTestId } = renderComponent({
+			const { getByTestId } = renderComponent({
 				props: {
 					parameters: collectionParameters,
 					nodeValues: { testCollection: {} },
@@ -1483,7 +1430,7 @@ describe('ParameterInputList', () => {
 			});
 
 			// Suspense stub should be present
-			expect(await findByTestId('suspense-stub')).toBeInTheDocument();
+			expect(getByTestId('suspense-stub')).toBeInTheDocument();
 		});
 	});
 
@@ -1492,7 +1439,7 @@ describe('ParameterInputList', () => {
 	 * Validates delete button visibility based on props and parameter types.
 	 */
 	describe('Delete Functionality', () => {
-		it('should show delete button when hideDelete is false and not read-only', async () => {
+		it('should show delete button when hideDelete is false and not read-only', () => {
 			const deletableParameters: INodeProperties[] = [
 				{
 					displayName: 'Deletable Field',
@@ -1503,7 +1450,7 @@ describe('ParameterInputList', () => {
 			];
 
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { findByTitle } = renderComponent({
+			const { getByTitle } = renderComponent({
 				props: {
 					parameters: deletableParameters,
 					nodeValues: { deletableField: 'test' },
@@ -1512,7 +1459,7 @@ describe('ParameterInputList', () => {
 				},
 			});
 
-			expect(await findByTitle('parameterInputList.delete')).toBeInTheDocument();
+			expect(getByTitle('parameterInputList.delete')).toBeInTheDocument();
 		});
 
 		it('should not show delete button for node settings parameters', () => {
@@ -1609,7 +1556,7 @@ describe('ParameterInputList', () => {
 
 		it('should handle nodeValues updates', async () => {
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { rerender, findByText } = renderComponent({
+			const { rerender, getByText } = renderComponent({
 				props: {
 					parameters: TEST_PARAMETERS,
 					nodeValues: TEST_NODE_VALUES,
@@ -1617,7 +1564,7 @@ describe('ParameterInputList', () => {
 			});
 
 			// Verify initial render
-			expect(await findByText('Test Fixed Collection')).toBeInTheDocument();
+			expect(getByText('Test Fixed Collection')).toBeInTheDocument();
 
 			// Update node values multiple times
 			await rerender({
@@ -1626,7 +1573,7 @@ describe('ParameterInputList', () => {
 			});
 
 			// Component should still render correctly after update
-			expect(await findByText('Test Fixed Collection')).toBeInTheDocument();
+			expect(getByText('Test Fixed Collection')).toBeInTheDocument();
 		});
 	});
 
@@ -1635,7 +1582,7 @@ describe('ParameterInputList', () => {
 	 * Validates that disabled parameters are rendered but not editable.
 	 */
 	describe('Disabled Parameters', () => {
-		it('should handle parameters with disabledOptions', async () => {
+		it('should handle parameters with disabledOptions', () => {
 			const disabledParameters: INodeProperties[] = [
 				{
 					displayName: 'Disabled Field',
@@ -1651,18 +1598,17 @@ describe('ParameterInputList', () => {
 			];
 
 			ndvStore.activeNode = TEST_NODE_NO_ISSUES;
-			const { container, findByTestId } = renderComponent({
+			const { container, getByTestId } = renderComponent({
 				props: {
 					parameters: disabledParameters,
 					nodeValues: { disableCondition: true },
 				},
 			});
-			await flushPromises();
 
 			// Parameter should be rendered (string type goes through ParameterInputFull stub)
 			expect(container.querySelector('.parameter-input-list-wrapper')).toBeInTheDocument();
 			// Parameter input stub should be present
-			expect(await findByTestId('parameter-input')).toBeInTheDocument();
+			expect(getByTestId('parameter-input')).toBeInTheDocument();
 		});
 	});
 
@@ -1671,23 +1617,22 @@ describe('ParameterInputList', () => {
 	 * Ensures component works correctly with Form, Form Trigger, Wait, and undefined types.
 	 */
 	describe('Node Type Variations', () => {
-		it('should handle nodes without type', async () => {
+		it('should handle nodes without type', () => {
 			ndvStore.activeNode = {
 				...TEST_NODE_NO_ISSUES,
 				type: undefined as unknown as string,
 			};
 
-			const { container, findByText } = renderComponent({
+			const { container, getByText } = renderComponent({
 				props: {
 					parameters: TEST_PARAMETERS,
 					nodeValues: TEST_NODE_VALUES,
 				},
 			});
-			await flushPromises();
 
 			// Component should render wrapper and parameters even with undefined node type
 			expect(container.querySelector('.parameter-input-list-wrapper')).toBeInTheDocument();
-			expect(await findByText('Test Fixed Collection')).toBeInTheDocument();
+			expect(getByText('Test Fixed Collection')).toBeInTheDocument();
 		});
 
 		it('should render parameters for different node types', () => {

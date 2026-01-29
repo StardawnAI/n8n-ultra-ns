@@ -5,7 +5,10 @@ import {
 } from '@/features/ai/assistant/assistant.types';
 import { useAIAssistantHelpers } from '@/features/ai/assistant/composables/useAIAssistantHelpers';
 import { usePostHog } from '@/app/stores/posthog.store';
-import { AI_BUILDER_TEMPLATE_EXAMPLES_EXPERIMENT } from '@/app/constants/experiments';
+import {
+	AI_BUILDER_MULTI_AGENT_EXPERIMENT,
+	AI_BUILDER_TEMPLATE_EXAMPLES_EXPERIMENT,
+} from '@/app/constants/experiments';
 import type { IRunExecutionData } from 'n8n-workflow';
 import type { IWorkflowDb } from '@/Interface';
 import { getWorkflowVersionsByIds } from '@n8n/rest-api-client/api/workflowHistory';
@@ -19,7 +22,7 @@ export function generateMessageId(): string {
 	return `${Date.now()}-${generateShortId()}`;
 }
 
-export async function createBuilderPayload(
+export function createBuilderPayload(
 	text: string,
 	id: string,
 	options: {
@@ -28,7 +31,7 @@ export async function createBuilderPayload(
 		workflow?: IWorkflowDb;
 		nodesForSchema?: string[];
 	} = {},
-): Promise<ChatRequest.UserChatMessage> {
+): ChatRequest.UserChatMessage {
 	const assistantHelpers = useAIAssistantHelpers();
 	const posthogStore = usePostHog();
 	const workflowContext: ChatRequest.WorkflowContext = {};
@@ -48,7 +51,7 @@ export async function createBuilderPayload(
 		if (options.workflow) {
 			// Extract and include expression values with their resolved values
 			// Pass execution data to only extract from nodes that have executed
-			workflowContext.expressionValues = await assistantHelpers.extractExpressionsFromWorkflow(
+			workflowContext.expressionValues = assistantHelpers.extractExpressionsFromWorkflow(
 				options.workflow,
 				options.executionData,
 			);
@@ -67,6 +70,9 @@ export async function createBuilderPayload(
 		templateExamples:
 			posthogStore.getVariant(AI_BUILDER_TEMPLATE_EXAMPLES_EXPERIMENT.name) ===
 			AI_BUILDER_TEMPLATE_EXAMPLES_EXPERIMENT.variant,
+		multiAgent:
+			posthogStore.getVariant(AI_BUILDER_MULTI_AGENT_EXPERIMENT.name) ===
+			AI_BUILDER_MULTI_AGENT_EXPERIMENT.variant,
 	};
 
 	return {

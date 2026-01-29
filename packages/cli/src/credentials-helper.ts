@@ -544,11 +544,7 @@ export class CredentialsHelper extends ICredentialsHelper {
 		const resolverId =
 			credentialsEntity.resolverId ?? additionalData.workflowSettings?.credentialResolverId;
 
-		if (
-			credentialsEntity.isResolvable &&
-			resolverId &&
-			additionalData.executionContext?.credentials
-		) {
+		if (credentialsEntity.isResolvable && resolverId) {
 			const credentials = await this.getCredentials(nodeCredentials, type);
 			const staticData = credentials.getData();
 

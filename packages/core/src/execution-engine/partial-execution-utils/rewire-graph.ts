@@ -30,9 +30,8 @@ export function rewireGraph(
 		disabled: false,
 		type: '@n8n/n8n-nodes-langchain.toolExecutor',
 		parameters: {
-			query: JSON.stringify(agentRequest?.query ?? {}),
+			query: agentRequest?.query ?? {},
 			toolName: agentRequest?.tool?.name ?? '',
-			node: tool.name,
 		},
 		id: rootNode.id,
 		typeVersion: 0,

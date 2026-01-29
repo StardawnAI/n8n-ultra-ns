@@ -1,7 +1,6 @@
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import type { BaseMessage } from '@langchain/core/messages';
 import { AIMessage, HumanMessage } from '@langchain/core/messages';
-import type { RunnableConfig } from '@langchain/core/runnables';
 import z from 'zod';
 
 import { compactPromptTemplate } from '@/prompts/chains/compact.prompt';
@@ -10,7 +9,6 @@ export async function conversationCompactChain(
 	llm: BaseChatModel,
 	messages: BaseMessage[],
 	previousSummary: string = '',
-	config?: RunnableConfig,
 ) {
 	// Use structured output for consistent summary format
 	const CompactedSession = z.object({
@@ -46,7 +44,7 @@ export async function conversationCompactChain(
 		conversationText,
 	});
 
-	const structuredOutput = await modelWithStructure.invoke(compactPrompt, config);
+	const structuredOutput = await modelWithStructure.invoke(compactPrompt);
 
 	const formattedSummary = `## Previous Conversation Summary
 

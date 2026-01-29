@@ -53,6 +53,7 @@ const versionDescription: INodeTypeDescription = {
 		activationHint:
 			'Once you’ve finished building your workflow, publish it to have it also listen continuously (you just won’t see those executions here).',
 	},
+	usableAsTool: true,
 	inputs: [],
 	outputs: [NodeConnectionTypes.Main],
 	credentials: [

@@ -3,18 +3,21 @@ import type { Constructable } from '@n8n/di';
 import type { Scope } from '@n8n/permissions';
 import type { RequestHandler, Router } from 'express';
 
-import type { KeyedRateLimiterConfig, RateLimiterLimits } from './rate-limit';
-
 export type Method = 'get' | 'post' | 'put' | 'patch' | 'delete' | 'head' | 'options';
 
 export type Arg = { type: 'body' | 'query' } | { type: 'param'; key: string };
 
-export interface CorsOptions {
-	allowedOrigins: string[];
-	allowedMethods: Method[];
-	allowedHeaders: string[];
-	allowCredentials?: boolean;
-	maxAge?: number;
+export interface RateLimit {
+	/**
+	 * The maximum number of requests to allow during the `window` before rate limiting the client.
+	 * @default 5
+	 */
+	limit?: number;
+	/**
+	 * How long we should remember the requests.
+	 * @default 300_000 (5 minutes)
+	 */
+	windowMs?: number;
 }
 
 export type HandlerName = string;
@@ -33,11 +36,7 @@ export interface RouteMetadata {
 	allowSkipPreviewAuth: boolean;
 	allowSkipMFA: boolean;
 	apiKeyAuth: boolean;
-	cors?: Partial<CorsOptions> | true;
-	/** Whether to apply IP-based rate limiting to the route */
-	ipRateLimit?: boolean | RateLimiterLimits;
-	/** Whether to apply keyed rate limiting to the route */
-	keyedRateLimit?: KeyedRateLimiterConfig;
+	rateLimit?: boolean | RateLimit;
 	licenseFeature?: BooleanLicenseFeature;
 	accessScope?: AccessScope;
 	args: Arg[];
@@ -58,8 +57,7 @@ export type StaticRouterMetadata = {
 		| 'allowSkipPreviewAuth'
 		| 'allowSkipMFA'
 		| 'middlewares'
-		| 'ipRateLimit'
-		| 'keyedRateLimit'
+		| 'rateLimit'
 		| 'licenseFeature'
 		| 'accessScope'
 	>

@@ -40,7 +40,7 @@ export class TemplatesPage extends BasePage {
 	}
 
 	getCategoryFilter(category: string): Locator {
-		return this.page.getByTestId(`template-filter-${category}`).locator('[role="checkbox"]');
+		return this.page.getByTestId(`template-filter-${category}`);
 	}
 
 	getTemplateCountLabel(): Locator {

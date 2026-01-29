@@ -35,7 +35,7 @@ beforeEach(() => {
 });
 
 it('should register methods decorated with @OnLeaderTakeover', () => {
-	vi.spyOn(metadata, 'register');
+	jest.spyOn(metadata, 'register');
 
 	@Service()
 	class TestService {
@@ -51,7 +51,7 @@ it('should register methods decorated with @OnLeaderTakeover', () => {
 });
 
 it('should register methods decorated with @OnLeaderStepdown', () => {
-	vi.spyOn(metadata, 'register');
+	jest.spyOn(metadata, 'register');
 
 	@Service()
 	class TestService {
@@ -99,8 +99,8 @@ it('should call decorated methods when events are emitted', async () => {
 	}
 
 	const testService = Container.get(TestService);
-	vi.spyOn(testService, 'handleLeaderTakeover');
-	vi.spyOn(testService, 'handleLeaderStepdown');
+	jest.spyOn(testService, 'handleLeaderTakeover');
+	jest.spyOn(testService, 'handleLeaderStepdown');
 
 	multiMainSetup.registerEventHandlers();
 

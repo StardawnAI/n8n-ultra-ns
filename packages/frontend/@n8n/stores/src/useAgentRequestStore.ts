@@ -1,11 +1,11 @@
 import { useLocalStorage } from '@vueuse/core';
-import type { AgentRequestQuery } from 'n8n-workflow';
+import type { INodeParameters, NodeParameterValueType } from 'n8n-workflow';
 import { defineStore } from 'pinia';
 
 const LOCAL_STORAGE_AGENT_REQUESTS = 'N8N_AGENT_REQUESTS';
 
 export interface IAgentRequest {
-	query: AgentRequestQuery;
+	query: INodeParameters | string;
 	toolName?: string;
 }
 
@@ -31,19 +31,18 @@ export const useAgentRequestStore = defineStore('agentRequest', () => {
 	};
 
 	// Getters
-	const getAgentRequests = (workflowId: string, nodeId: string): IAgentRequest['query'] => {
+	const getAgentRequests = (workflowId: string, nodeId: string): INodeParameters | string => {
 		return agentRequests.value[workflowId]?.[nodeId]?.query || {};
 	};
 
 	const getQueryValue = (
 		workflowId: string,
 		nodeId: string,
-		nodeName: string,
-		paramName?: string,
-	): unknown => {
-		const query = agentRequests.value[workflowId]?.[nodeId]?.query?.[nodeName];
-		if (typeof query === 'string' || !paramName) {
-			return query;
+		paramName: string,
+	): NodeParameterValueType | undefined => {
+		const query = agentRequests.value[workflowId]?.[nodeId]?.query;
+		if (typeof query === 'string') {
+			return undefined;
 		}
 		return query?.[paramName];
 	};
@@ -57,7 +56,7 @@ export const useAgentRequestStore = defineStore('agentRequest', () => {
 
 		agentRequests.value[workflowId][nodeId] = {
 			...request,
-			query: { ...request.query },
+			query: typeof request.query === 'string' ? request.query : { ...request.query },
 		};
 	};
 

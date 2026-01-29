@@ -39,6 +39,7 @@ export function createValidateStructureTool(parsedNodeTypes: INodeTypeDescriptio
 
 				const connectionViolations = validateConnections(state.workflowJSON, parsedNodeTypes);
 				const triggerViolations = validateTrigger(state.workflowJSON, parsedNodeTypes);
+
 				const allViolations = [...connectionViolations, ...triggerViolations];
 
 				let message: string;
@@ -51,11 +52,9 @@ export function createValidateStructureTool(parsedNodeTypes: INodeTypeDescriptio
 
 				reporter.complete({ message });
 
-				const stateUpdates: Record<string, unknown> = {
+				return createSuccessResponse(config, message, {
 					structureValidation: { connections: connectionViolations, trigger: triggerViolations },
-				};
-
-				return createSuccessResponse(config, message, stateUpdates);
+				});
 			} catch (error) {
 				if (error instanceof z.ZodError) {
 					const validationError = new ValidationError('Invalid input parameters', {

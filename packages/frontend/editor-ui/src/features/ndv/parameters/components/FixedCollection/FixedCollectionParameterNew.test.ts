@@ -7,7 +7,6 @@ import userEvent from '@testing-library/user-event';
 import { waitFor } from '@testing-library/vue';
 import { setActivePinia } from 'pinia';
 import { nextTick } from 'vue';
-import { flushPromises } from '@vue/test-utils';
 
 describe('FixedCollectionParameterNew.vue', () => {
 	const pinia = createTestingPinia({
@@ -21,10 +20,6 @@ describe('FixedCollectionParameterNew.vue', () => {
 
 	beforeEach(() => {
 		sessionStorage.clear();
-	});
-
-	afterEach(async () => {
-		await flushPromises();
 	});
 
 	const baseProps: Props = {
@@ -71,9 +66,8 @@ describe('FixedCollectionParameterNew.vue', () => {
 	});
 
 	describe('Top-level multiple values', () => {
-		it('renders with section header, add button, and items', async () => {
+		it('renders with section header, add button, and items', () => {
 			const rendered = renderComponent();
-			await flushPromises();
 
 			expect(rendered.getByTestId('fixed-collection-rules')).toBeInTheDocument();
 			expect(rendered.getByText('Routing Rules')).toBeInTheDocument();
@@ -83,9 +77,7 @@ describe('FixedCollectionParameterNew.vue', () => {
 
 		it('emits valueChanged event on option creation', async () => {
 			const rendered = renderComponent();
-			await flushPromises();
 			await userEvent.click(rendered.getByTestId('fixed-collection-add-top-level-button'));
-			await flushPromises();
 			expect(rendered.emitted('valueChanged')).toEqual([
 				[
 					{

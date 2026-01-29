@@ -18,7 +18,7 @@ export class AgentTool extends VersionedNodeType {
 				categories: ['AI'],
 				subcategories: {
 					AI: ['Tools'],
-					Tools: ['Recommended Tools'],
+					Tools: ['Other Tools'],
 				},
 			},
 			defaultVersion: 3,

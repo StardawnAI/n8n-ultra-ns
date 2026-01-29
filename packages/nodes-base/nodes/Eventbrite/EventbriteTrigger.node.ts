@@ -11,11 +11,7 @@ import type {
 } from 'n8n-workflow';
 import { NodeApiError, NodeConnectionTypes } from 'n8n-workflow';
 
-import {
-	eventbriteApiRequest,
-	eventbriteApiRequestAllItems,
-	isValidEventbriteUrl,
-} from './GenericFunctions';
+import { eventbriteApiRequest, eventbriteApiRequestAllItems } from './GenericFunctions';
 
 export class EventbriteTrigger implements INodeType {
 	description: INodeTypeDescription = {
@@ -300,10 +296,9 @@ export class EventbriteTrigger implements INodeType {
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
 		const req = this.getRequestObject();
 
-		const apiUrl = (req.body as IDataObject).api_url;
-		if (!isValidEventbriteUrl(apiUrl)) {
+		if (req.body.api_url === undefined) {
 			throw new NodeApiError(this.getNode(), req.body as JsonObject, {
-				message: 'The received data does not contain a valid Eventbrite API URL!',
+				message: 'The received data does not contain required "api_url" property!',
 			});
 		}
 

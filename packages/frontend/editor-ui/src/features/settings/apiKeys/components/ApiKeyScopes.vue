@@ -6,8 +6,8 @@ import { useI18n } from '@n8n/i18n';
 import { usePageRedirectionHelper } from '@/app/composables/usePageRedirectionHelper';
 import { I18nT } from 'vue-i18n';
 
-import { ElOption, ElOptionGroup, ElSelect } from 'element-plus';
-import { N8nCheckbox, N8nInputLabel, N8nLink, N8nNotice } from '@n8n/design-system';
+import { ElCheckbox, ElOption, ElOptionGroup, ElSelect } from 'element-plus';
+import { N8nInputLabel, N8nLink, N8nNotice } from '@n8n/design-system';
 // Define props
 const props = defineProps({
 	modelValue: {
@@ -96,13 +96,14 @@ function goToUpgradeApiKeyScopes() {
 				:append-to="popperContainer"
 			>
 				<template #header>
-					<N8nCheckbox
+					<ElCheckbox
 						v-model="checkAll"
 						:disabled="!enabled"
 						:class="$style['scopes-checkbox']"
 						:indeterminate="indeterminate"
-						:label="i18n.baseText('settings.api.scopes.selectAll')"
-					/>
+					>
+						{{ i18n.baseText('settings.api.scopes.selectAll') }}
+					</ElCheckbox>
 				</template>
 
 				<template v-for="(actions, resource) in groupedScopes" :key="resource">
@@ -140,6 +141,10 @@ function goToUpgradeApiKeyScopes() {
 	background-color: var(--color--text);
 }
 
+.api-key-scopes :global(.el-checkbox) {
+	margin-left: var(--spacing--xs);
+}
+
 .scopes-dropdown-container :global(.el-select-group__title) {
 	font-size: var(--font-size--2xs);
 	color: var(--color--text--shade-1);
@@ -164,6 +169,10 @@ function goToUpgradeApiKeyScopes() {
 	margin-bottom: var(--spacing--xs);
 }
 
+.scopes-dropdown-container :global(.el-checkbox) {
+	margin-left: var(--spacing--2xs);
+}
+
 .scopes-dropdown-container :global(.el-select-dropdown__header) {
 	margin-top: var(--spacing--xs);
 	padding-bottom: var(--spacing--xs);
@@ -172,7 +181,6 @@ function goToUpgradeApiKeyScopes() {
 
 .scopes-checkbox {
 	display: flex;
-	margin-left: var(--spacing--2xs);
 }
 
 .scopes-dropdown-container :global(.el-select-group__wrap::after) {

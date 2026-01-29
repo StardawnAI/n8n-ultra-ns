@@ -209,9 +209,3 @@ export async function extractDataFromPDF(
 
 	return returnData;
 }
-
-export function prepareBinariesDataList(data: string | string[] | IBinaryData | IBinaryData[]) {
-	if (Array.isArray(data)) return data;
-	if (typeof data === 'object') return [data];
-	return data.split(',').map((item: string) => item.trim());
-}

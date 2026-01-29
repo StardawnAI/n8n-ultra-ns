@@ -2,10 +2,13 @@
 import BaseLayout from './BaseLayout.vue';
 import { VIEWS } from '@/app/constants';
 import { isRouteLocationRaw } from '@/app/utils/typeGuards';
-import { onMounted, ref } from 'vue';
+import { defineAsyncComponent, onMounted, ref } from 'vue';
 import type { HistoryState } from 'vue-router';
 import { useRouter } from 'vue-router';
-import SettingsSidebar from '@/app/components/SettingsSidebar.vue';
+
+const SettingsSidebar = defineAsyncComponent(
+	async () => await import('@/app/components/SettingsSidebar.vue'),
+);
 
 const router = useRouter();
 
@@ -32,7 +35,9 @@ onMounted(() => {
 <template>
 	<BaseLayout>
 		<template #sidebar>
-			<SettingsSidebar @return="onReturn" />
+			<Suspense>
+				<SettingsSidebar @return="onReturn" />
+			</Suspense>
 		</template>
 
 		<div :class="$style.contentContainer">

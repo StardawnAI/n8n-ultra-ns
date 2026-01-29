@@ -53,11 +53,5 @@ export async function apiRequest(
 		Object.assign(options, option);
 	}
 
-	const response = await this.helpers.requestWithAuthentication.call(this, 'openAiApi', options);
-
-	if (response && response.error === null) {
-		response.error = undefined;
-	}
-
-	return response;
+	return await this.helpers.requestWithAuthentication.call(this, 'openAiApi', options);
 }

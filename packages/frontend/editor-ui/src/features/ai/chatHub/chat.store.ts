@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { CHAT_SESSIONS_PAGE_SIZE } from './constants';
+import { CHAT_STORE, CHAT_SESSIONS_PAGE_SIZE } from './constants';
 import { computed, ref } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 import { useI18n } from '@n8n/i18n';
@@ -36,7 +36,7 @@ import {
 	type ChatHubAgentDto,
 	type ChatHubCreateAgentRequest,
 	type ChatHubUpdateAgentRequest,
-	type MessageChunk,
+	type EnrichedStructuredChunk,
 	type ChatHubMessageStatus,
 	type ChatModelDto,
 	type ChatHubLLMProvider,
@@ -68,9 +68,8 @@ import { useTelemetry } from '@/app/composables/useTelemetry';
 import { deepCopy, type INode } from 'n8n-workflow';
 import { convertFileToBinaryData } from '@/app/utils/fileUtils';
 import { ResponseError } from '@n8n/rest-api-client';
-import { STORES } from '@n8n/stores/constants';
 
-export const useChatStore = defineStore(STORES.CHAT_HUB, () => {
+export const useChatStore = defineStore(CHAT_STORE, () => {
 	const rootStore = useRootStore();
 	const toast = useToast();
 	const telemetry = useTelemetry();
@@ -434,7 +433,7 @@ export const useChatStore = defineStore(STORES.CHAT_HUB, () => {
 		}
 	}
 
-	function onStreamMessage(chunk: MessageChunk) {
+	function onStreamMessage(chunk: EnrichedStructuredChunk) {
 		if (!streaming.value) {
 			return;
 		}

@@ -10,12 +10,6 @@ import type {
 } from 'n8n-workflow';
 import { NodeApiError } from 'n8n-workflow';
 
-const baseUrl = 'https://www.eventbriteapi.com/';
-
-export function isValidEventbriteUrl(url: unknown): boolean {
-	return typeof url === 'string' && url.startsWith(baseUrl);
-}
-
 export async function eventbriteApiRequest(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions | IWebhookFunctions,
 	method: IHttpRequestMethods,
@@ -31,7 +25,7 @@ export async function eventbriteApiRequest(
 		method,
 		qs,
 		body,
-		uri: uri || `${baseUrl}v3${resource}`,
+		uri: uri || `https://www.eventbriteapi.com/v3${resource}`,
 		json: true,
 	};
 	options = Object.assign({}, options, option);

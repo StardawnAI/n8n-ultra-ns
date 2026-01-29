@@ -3,7 +3,7 @@ import { GlobalConfig } from '@n8n/config';
 import { ExecutionRepository } from '@n8n/db';
 import { Service } from '@n8n/di';
 import capitalize from 'lodash/capitalize';
-import type { WorkflowExecuteMode } from 'n8n-workflow';
+import type { WorkflowExecuteMode as ExecutionMode } from 'n8n-workflow';
 
 import { InvalidConcurrencyLimitError } from '@/errors/invalid-concurrency-limit.error';
 import { UnknownExecutionModeError } from '@/errors/unknown-execution-mode.error';
@@ -16,11 +16,6 @@ export const CLOUD_TEMP_PRODUCTION_LIMIT = 999;
 export const CLOUD_TEMP_REPORTABLE_THRESHOLDS = [5, 10, 20, 50, 100, 200];
 
 export type ConcurrencyQueueType = 'production' | 'evaluation';
-
-export interface CapacityTarget {
-	executionId: string;
-	mode: WorkflowExecuteMode;
-}
 
 @Service()
 export class ConcurrencyControlService {
@@ -118,7 +113,7 @@ export class ConcurrencyControlService {
 	/**
 	 * Block or let through an execution based on concurrency capacity.
 	 */
-	async throttle({ mode, executionId }: CapacityTarget) {
+	async throttle({ mode, executionId }: { mode: ExecutionMode; executionId: string }) {
 		if (!this.isEnabled || this.isUnlimited(mode)) return;
 
 		await this.getQueue(mode)?.enqueue(executionId);
@@ -127,7 +122,7 @@ export class ConcurrencyControlService {
 	/**
 	 * Release capacity back so the next execution in the queue can proceed.
 	 */
-	release({ mode }: { mode: WorkflowExecuteMode }) {
+	release({ mode }: { mode: ExecutionMode }) {
 		if (!this.isEnabled || this.isUnlimited(mode)) return;
 
 		this.getQueue(mode)?.dequeue();
@@ -136,7 +131,7 @@ export class ConcurrencyControlService {
 	/**
 	 * Remove an execution from the production queue, releasing capacity back.
 	 */
-	remove({ mode, executionId }: CapacityTarget) {
+	remove({ mode, executionId }: { mode: ExecutionMode; executionId: string }) {
 		if (!this.isEnabled || this.isUnlimited(mode)) return;
 
 		this.getQueue(mode)?.remove(executionId);
@@ -188,7 +183,7 @@ export class ConcurrencyControlService {
 		});
 	}
 
-	private isUnlimited(mode: WorkflowExecuteMode) {
+	private isUnlimited(mode: ExecutionMode) {
 		return this.getQueue(mode) === undefined;
 	}
 
@@ -199,7 +194,7 @@ export class ConcurrencyControlService {
 	/**
 	 * Get the concurrency queue based on the execution mode.
 	 */
-	private getQueue(mode: WorkflowExecuteMode) {
+	private getQueue(mode: ExecutionMode) {
 		if (
 			mode === 'error' ||
 			mode === 'integrated' ||

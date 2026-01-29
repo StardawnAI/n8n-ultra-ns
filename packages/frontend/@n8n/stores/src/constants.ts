@@ -44,5 +44,4 @@ export const STORES = {
 	TEMPLATES_DATA_QUALITY: 'templatesDataQuality',
 	BANNERS: 'banners',
 	CONSENT: 'consent',
-	CHAT_HUB: 'chatHub',
 } as const;

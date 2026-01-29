@@ -4,7 +4,7 @@ import type { SimpleWorkflow } from '@/types';
 import { validateFromAi } from '@/validation/checks';
 import type { SingleEvaluatorResult } from '@/validation/types';
 
-import { calcSingleEvaluatorScore } from '../score';
+import { calcSingleEvaluatorScore } from '../../utils/score';
 
 export function evaluateFromAi(
 	workflow: SimpleWorkflow,

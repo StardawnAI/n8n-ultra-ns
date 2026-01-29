@@ -50,26 +50,20 @@ describe('search-workflows MCP tool', () => {
 	describe('handler tests', () => {
 		test('formats the output correctly', async () => {
 			const workflows = [
-				{
-					...createWorkflow({
-						id: 'a',
-						activeVersionId: uuid(),
-						name: 'Alpha',
-						nodes: [{ name: 'Start', type: MANUAL_TRIGGER_NODE_TYPE } as INode],
-					}),
-					scopes: ['workflow:read', 'workflow:execute'],
-				},
-				{
-					...createWorkflow({
-						id: 'b',
-						name: 'Beta',
-						activeVersionId: 'version-b',
-						nodes: [
-							{ name: 'Execute subworkflow', type: EXECUTE_WORKFLOW_TRIGGER_NODE_TYPE } as INode,
-						],
-					}),
-					scopes: ['workflow:read'],
-				},
+				createWorkflow({
+					id: 'a',
+					activeVersionId: uuid(),
+					name: 'Alpha',
+					nodes: [{ name: 'Start', type: MANUAL_TRIGGER_NODE_TYPE } as INode],
+				}),
+				createWorkflow({
+					id: 'b',
+					name: 'Beta',
+					activeVersionId: 'version-b',
+					nodes: [
+						{ name: 'Execute subworkflow', type: EXECUTE_WORKFLOW_TRIGGER_NODE_TYPE } as INode,
+					],
+				}),
 			];
 
 			const workflowService = mockInstance(WorkflowService, {
@@ -88,8 +82,6 @@ describe('search-workflows MCP tool', () => {
 					updatedAt: new Date('2024-01-02T00:00:00.000Z').toISOString(),
 					triggerCount: 1,
 					nodes: [{ name: 'Start', type: MANUAL_TRIGGER_NODE_TYPE }],
-					scopes: ['workflow:read', 'workflow:execute'],
-					canExecute: true,
 				},
 				{
 					id: 'b',
@@ -100,8 +92,6 @@ describe('search-workflows MCP tool', () => {
 					updatedAt: new Date('2024-01-02T00:00:00.000Z').toISOString(),
 					triggerCount: 1,
 					nodes: [{ name: 'Execute subworkflow', type: EXECUTE_WORKFLOW_TRIGGER_NODE_TYPE }],
-					scopes: ['workflow:read'],
-					canExecute: false,
 				},
 			]);
 		});
@@ -146,12 +136,7 @@ describe('search-workflows MCP tool', () => {
 				getMany: jest.fn().mockResolvedValue({ workflows, count: 1 }),
 			});
 			const result = await searchWorkflows(user, workflowService as unknown as WorkflowService, {});
-			expect(result.data[0]).toMatchObject({
-				id: 'no-nodes',
-				nodes: [],
-				scopes: [],
-				canExecute: false,
-			});
+			expect(result.data[0]).toMatchObject({ id: 'no-nodes', nodes: [] });
 		});
 	});
 });

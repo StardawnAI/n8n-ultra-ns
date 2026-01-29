@@ -54,7 +54,6 @@ import {
 	SEND_AND_WAIT_OPERATION,
 	Workflow,
 	TelemetryHelpers,
-	BINARY_MODE_SEPARATE,
 } from 'n8n-workflow';
 import * as workflowUtils from 'n8n-workflow/common';
 
@@ -103,7 +102,6 @@ const defaults: Omit<IWorkflowDb, 'id'> & { settings: NonNullable<IWorkflowDb['s
 	nodes: [],
 	settings: {
 		executionOrder: 'v1',
-		binaryMode: BINARY_MODE_SEPARATE,
 	},
 	tags: [],
 	pinData: {},
@@ -1911,10 +1909,7 @@ export const useWorkflowsStore = defineStore(STORES.WORKFLOWS, () => {
 	 * @param webhookType - The type of webhook ('test' or 'production')
 	 * @returns The webhook URL or undefined if the node doesn't have webhooks
 	 */
-	async function getWebhookUrl(
-		nodeId: string,
-		webhookType: 'test' | 'production',
-	): Promise<string | undefined> {
+	function getWebhookUrl(nodeId: string, webhookType: 'test' | 'production'): string | undefined {
 		const node = getNodeById(nodeId);
 		if (!node) return;
 
@@ -1922,7 +1917,7 @@ export const useWorkflowsStore = defineStore(STORES.WORKFLOWS, () => {
 		if (!nodeType?.webhooks?.length) return;
 
 		const webhook = nodeType.webhooks[0];
-		return await workflowHelpers.getWebhookUrl(webhook, node, webhookType);
+		return workflowHelpers.getWebhookUrl(webhook, node, webhookType);
 	}
 
 	watch(

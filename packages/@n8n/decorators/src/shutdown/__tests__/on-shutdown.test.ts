@@ -9,7 +9,7 @@ describe('OnShutdown', () => {
 	beforeEach(() => {
 		shutdownMetadata = new ShutdownMetadata();
 		Container.set(ShutdownMetadata, shutdownMetadata);
-		vi.spyOn(shutdownMetadata, 'register');
+		jest.spyOn(shutdownMetadata, 'register');
 	});
 
 	it('should register a methods that is decorated with OnShutdown', () => {

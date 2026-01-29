@@ -65,7 +65,7 @@ describe('AddNodeTool', () => {
 				buildAddNodeInput({
 					nodeType: 'n8n-nodes-base.code',
 					name: 'Process Data',
-					initialParametersReasoning: REASONING.STATIC_NODE,
+					connectionParametersReasoning: REASONING.STATIC_NODE,
 				}),
 				mockConfig,
 			);
@@ -133,8 +133,9 @@ describe('AddNodeTool', () => {
 				buildAddNodeInput({
 					nodeType: '@n8n/n8n-nodes-langchain.agent',
 					name: 'AI Assistant',
-					initialParametersReasoning: REASONING.DYNAMIC_AI_NODE + ', setting hasOutputParser:true',
-					initialParameters: { hasOutputParser: true },
+					connectionParametersReasoning:
+						REASONING.DYNAMIC_AI_NODE + ', setting hasOutputParser:true',
+					connectionParameters: { hasOutputParser: true },
 				}),
 				mockConfig,
 			);
@@ -177,7 +178,7 @@ describe('AddNodeTool', () => {
 				buildAddNodeInput({
 					nodeType: 'n8n-nodes-base.unknown',
 					name: 'Unknown Node',
-					initialParametersReasoning: 'Testing unknown node',
+					connectionParametersReasoning: 'Testing unknown node',
 				}),
 				mockConfig,
 			);
@@ -219,7 +220,7 @@ describe('AddNodeTool', () => {
 				buildAddNodeInput({
 					nodeType: 'n8n-nodes-base.webhook',
 					name: 'Incoming Webhook',
-					initialParametersReasoning: REASONING.WEBHOOK_NODE,
+					connectionParametersReasoning: REASONING.WEBHOOK_NODE,
 				}),
 				mockConfig,
 			);
@@ -286,7 +287,7 @@ describe('AddNodeTool', () => {
 				buildAddNodeInput({
 					nodeType: '@n8n/n8n-nodes-langchain.agent',
 					name: 'AI Agent',
-					initialParametersReasoning: 'Agent node for AI processing',
+					connectionParametersReasoning: 'Agent node for AI processing',
 				}),
 				mockConfig,
 			);
@@ -332,7 +333,7 @@ describe('AddNodeTool', () => {
 					nodeType: 'n8n-nodes-base.httpRequest',
 					nodeVersion: 2,
 					name: 'HTTP Request V2',
-					initialParametersReasoning: 'Need version 2 for specific features',
+					connectionParametersReasoning: 'Need version 2 for specific features',
 				}),
 				mockConfig,
 			);
@@ -359,7 +360,7 @@ describe('AddNodeTool', () => {
 					nodeType: 'n8n-nodes-base.code',
 					nodeVersion: 99, // Non-existent version
 					name: 'Code V99',
-					initialParametersReasoning: 'Requesting non-existent version',
+					connectionParametersReasoning: 'Requesting non-existent version',
 				}),
 				mockConfig,
 			);
@@ -400,7 +401,7 @@ describe('AddNodeTool', () => {
 					nodeType: 'n8n-nodes-base.multiVersionCode',
 					nodeVersion: 2,
 					name: 'Multi Version Code V2',
-					initialParametersReasoning: 'Need version 2 from array versions',
+					connectionParametersReasoning: 'Need version 2 from array versions',
 				}),
 				mockConfig,
 			);
@@ -438,7 +439,7 @@ describe('AddNodeTool', () => {
 					nodeType: 'n8n-nodes-base.multiVersionCode',
 					nodeVersion: 4,
 					name: 'Multi Version Code V4',
-					initialParametersReasoning: 'Requesting version not in array',
+					connectionParametersReasoning: 'Requesting version not in array',
 				}),
 				mockConfig,
 			);

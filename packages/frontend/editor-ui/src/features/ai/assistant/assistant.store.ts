@@ -301,19 +301,16 @@ export const useAssistantStore = defineStore(STORES.ASSISTANT, () => {
 	/**
 	 * Gets information about the current view and active node to provide context to the assistant
 	 */
-	async function getVisualContext(
+	function getVisualContext(
 		nodeInfo?: ChatRequest.NodeInfo,
-	): Promise<ChatRequest.AssistantContext | undefined> {
+	): ChatRequest.AssistantContext | undefined {
 		if (chatSessionTask.value === 'error') {
 			return undefined;
 		}
 		const currentView = route.name as VIEWS;
 		const activeNode = workflowsStore.activeNode();
 		const activeNodeForLLM = activeNode
-			? await assistantHelpers.processNodeForAssistant(activeNode, [
-					'position',
-					'parameters.notice',
-				])
+			? assistantHelpers.processNodeForAssistant(activeNode, ['position', 'parameters.notice'])
 			: null;
 		const activeModals = uiStore.activeModals;
 		const isCredentialModalActive = activeModals.includes(CREDENTIAL_EDIT_MODAL_KEY);
@@ -371,7 +368,7 @@ export const useAssistantStore = defineStore(STORES.ASSISTANT, () => {
 		const nodeInfo = assistantHelpers.getNodeInfoForAssistant(activeNode);
 		// For the initial message, only provide visual context if the task is support
 		const visualContext =
-			chatSessionTask.value === 'support' ? await getVisualContext(nodeInfo) : undefined;
+			chatSessionTask.value === 'support' ? getVisualContext(nodeInfo) : undefined;
 
 		if (nodeInfo.authType && chatSessionTask.value === 'credentials') {
 			userMessage += ` I am using ${nodeInfo.authType.name}.`;
@@ -446,7 +443,7 @@ export const useAssistantStore = defineStore(STORES.ASSISTANT, () => {
 				firstName: usersStore.currentUser?.firstName ?? '',
 			},
 			error: context.error,
-			node: await assistantHelpers.processNodeForAssistant(context.node, [
+			node: assistantHelpers.processNodeForAssistant(context.node, [
 				'position',
 				'parameters.notice',
 			]),
@@ -553,7 +550,7 @@ export const useAssistantStore = defineStore(STORES.ASSISTANT, () => {
 			}
 			const activeNode = workflowsStore.activeNode() as INode;
 			const nodeInfo = assistantHelpers.getNodeInfoForAssistant(activeNode);
-			const userContext = await getVisualContext(nodeInfo);
+			const userContext = getVisualContext(nodeInfo);
 
 			chatWithAssistant(
 				rootStore.restApiContext,

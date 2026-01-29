@@ -4,6 +4,7 @@ import { Service } from '@n8n/di';
 import type { DataSourceOptions, LoggerOptions } from '@n8n/typeorm';
 import type { MysqlConnectionOptions } from '@n8n/typeorm/driver/mysql/MysqlConnectionOptions';
 import type { PostgresConnectionOptions } from '@n8n/typeorm/driver/postgres/PostgresConnectionOptions';
+import type { SqliteConnectionOptions } from '@n8n/typeorm/driver/sqlite/SqliteConnectionOptions';
 import type { SqlitePooledConnectionOptions } from '@n8n/typeorm/driver/sqlite-pooled/SqlitePooledConnectionOptions';
 import { UserError } from 'n8n-workflow';
 import type { TlsOptions } from 'node:tls';
@@ -74,20 +75,32 @@ export class DbConnectionOptions {
 		};
 	}
 
-	private getSqliteConnectionOptions(): SqlitePooledConnectionOptions {
+	private getSqliteConnectionOptions(): SqliteConnectionOptions | SqlitePooledConnectionOptions {
 		const { sqlite: sqliteConfig } = this.config;
 		const { n8nFolder } = this.instanceSettingsConfig;
 
-		return {
-			type: 'sqlite-pooled',
-			poolSize: sqliteConfig.poolSize,
-			enableWAL: true,
-			acquireTimeout: 60_000,
-			destroyTimeout: 5_000,
+		const commonOptions = {
 			...this.getCommonOptions(),
 			database: path.resolve(n8nFolder, sqliteConfig.database),
 			migrations: sqliteMigrations,
 		};
+
+		if (sqliteConfig.poolSize > 0) {
+			return {
+				type: 'sqlite-pooled',
+				poolSize: sqliteConfig.poolSize,
+				enableWAL: true,
+				acquireTimeout: 60_000,
+				destroyTimeout: 5_000,
+				...commonOptions,
+			};
+		} else {
+			return {
+				type: 'sqlite',
+				enableWAL: sqliteConfig.enableWAL,
+				...commonOptions,
+			};
+		}
 	}
 
 	private getPostgresConnectionOptions(): PostgresConnectionOptions {

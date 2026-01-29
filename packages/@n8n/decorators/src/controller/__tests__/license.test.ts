@@ -9,7 +9,7 @@ describe('@Licensed Decorator', () => {
 	let controllerRegistryMetadata: ControllerRegistryMetadata;
 
 	beforeEach(() => {
-		vi.resetAllMocks();
+		jest.resetAllMocks();
 
 		controllerRegistryMetadata = new ControllerRegistryMetadata();
 		Container.set(ControllerRegistryMetadata, controllerRegistryMetadata);

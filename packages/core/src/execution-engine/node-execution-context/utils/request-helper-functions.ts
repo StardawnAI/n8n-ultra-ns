@@ -197,7 +197,6 @@ const getBeforeRedirectFn =
 		agentOptions: AgentOptions,
 		axiosConfig: AxiosRequestConfig,
 		proxyConfig: IHttpRequestOptions['proxy'] | string | undefined,
-		sendCredentialsOnCrossOriginRedirect: boolean,
 	) =>
 	(redirectedRequest: Record<string, any>) => {
 		const redirectAgentOptions = {
@@ -216,19 +215,12 @@ const getBeforeRedirectFn =
 			: httpAgent;
 		redirectedRequest.agents = { http: httpAgent, https: httpsAgent };
 
-		const originalUrl = axiosConfig.baseURL
-			? new URL(axiosConfig.url ?? '', axiosConfig.baseURL)
-			: new URL(axiosConfig.url ?? '');
-		const originalOrigin = originalUrl.origin;
-		const targetOrigin = new URL(targetUrl).origin;
 		// Copy auth headers
-		if (originalOrigin === targetOrigin || sendCredentialsOnCrossOriginRedirect) {
-			if (axiosConfig.headers?.Authorization) {
-				redirectedRequest.headers.Authorization = axiosConfig.headers.Authorization;
-			}
-			if (axiosConfig.auth) {
-				redirectedRequest.auth = `${axiosConfig.auth.username}:${axiosConfig.auth.password}`;
-			}
+		if (axiosConfig.headers?.Authorization) {
+			redirectedRequest.headers.Authorization = axiosConfig.headers.Authorization;
+		}
+		if (axiosConfig.auth) {
+			redirectedRequest.auth = `${axiosConfig.auth.username}:${axiosConfig.auth.password}`;
 		}
 	};
 
@@ -593,12 +585,7 @@ export async function parseRequestObject(requestObject: IRequestOptions) {
 
 	setAxiosAgents(axiosConfig, agentOptions, requestObject.proxy);
 
-	axiosConfig.beforeRedirect = getBeforeRedirectFn(
-		agentOptions,
-		axiosConfig,
-		requestObject.proxy,
-		requestObject.sendCredentialsOnCrossOriginRedirect ?? true,
-	);
+	axiosConfig.beforeRedirect = getBeforeRedirectFn(agentOptions, axiosConfig, requestObject.proxy);
 
 	if (requestObject.useStream) {
 		axiosConfig.responseType = 'stream';
@@ -778,12 +765,7 @@ export function convertN8nRequestToAxios(n8nRequest: IHttpRequestOptions): Axios
 	}
 	setAxiosAgents(axiosRequest, agentOptions, proxy);
 
-	axiosRequest.beforeRedirect = getBeforeRedirectFn(
-		agentOptions,
-		axiosRequest,
-		n8nRequest.proxy,
-		n8nRequest.sendCredentialsOnCrossOriginRedirect ?? true,
-	);
+	axiosRequest.beforeRedirect = getBeforeRedirectFn(agentOptions, axiosRequest, n8nRequest.proxy);
 
 	if (n8nRequest.arrayFormat !== undefined) {
 		axiosRequest.paramsSerializer = (params) => {

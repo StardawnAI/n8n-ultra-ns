@@ -1,7 +1,6 @@
 import { reactive } from 'vue';
 import { createTestingPinia } from '@pinia/testing';
-import { waitFor } from '@testing-library/vue';
-import { mockedStore, getTooltip, hoverTooltipTrigger } from '@/__tests__/utils';
+import { mockedStore } from '@/__tests__/utils';
 import { useSettingsStore } from '@/app/stores/settings.store';
 import type { FrontendSettings } from '@n8n/api-types';
 import userEvent from '@testing-library/user-event';
@@ -132,7 +131,7 @@ describe('ExecutionsFilter', () => {
 			await userEvent.hover(getByTestId('execution-filter-saved-data-key-input'));
 
 			if (advancedExecutionFilters) {
-				expect(queryByTestId('executions-filter-view-plans-link')).not.toBeInTheDocument();
+				expect(queryByTestId('executions-filter-view-plans-link')).not.toBeVisible();
 			}
 
 			expect(queryByTestId('executions-filter-reset-button')).not.toBeInTheDocument();
@@ -256,17 +255,10 @@ describe('ExecutionsFilter', () => {
 		const { getByTestId } = renderComponent();
 
 		await userEvent.click(getByTestId('executions-filter-button'));
+		await userEvent.hover(getByTestId('execution-filter-saved-data-key-input'));
 
-		// Verify the input field is present
-		const keyInput = getByTestId('execution-filter-saved-data-key-input');
-		expect(keyInput).toBeInTheDocument();
-
-		// Hover and verify tooltip shows upgrade message
-		await hoverTooltipTrigger(keyInput);
-		await waitFor(() => {
-			const tooltip = getTooltip();
-			expect(tooltip).toHaveTextContent('Upgrade plan to filter executions by custom data');
-			expect(tooltip).toHaveTextContent('View plans');
-		});
+		const upgradeLink = getByTestId('executions-filter-view-plans-link');
+		expect(upgradeLink).toBeInTheDocument();
+		expect(upgradeLink).toHaveAttribute('href', '#');
 	});
 });

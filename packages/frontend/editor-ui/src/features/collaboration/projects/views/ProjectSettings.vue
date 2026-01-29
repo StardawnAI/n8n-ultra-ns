@@ -9,12 +9,11 @@ import { useI18n } from '@n8n/i18n';
 import { type ResourceCounts, useProjectsStore } from '../projects.store';
 import type { Project, ProjectRelation, ProjectMemberData } from '../projects.types';
 import { useToast } from '@/app/composables/useToast';
-import { DEBOUNCE_TIME, getDebounceTime, VIEWS } from '@/app/constants';
+import { VIEWS } from '@/app/constants';
 import ProjectDeleteDialog from '../components/ProjectDeleteDialog.vue';
 import ProjectRoleUpgradeDialog from '../components/ProjectRoleUpgradeDialog.vue';
 import ProjectMembersTable from '../components/ProjectMembersTable.vue';
 import { useRolesStore } from '@/app/stores/roles.store';
-import { ROLE } from '@n8n/api-types';
 import { useCloudPlanStore } from '@/app/stores/cloudPlan.store';
 import { useTelemetry } from '@/app/composables/useTelemetry';
 import { useDocumentTitle } from '@/app/composables/useDocumentTitle';
@@ -125,19 +124,8 @@ const onAddMember = async (userId: string) => {
 	const user = usersStore.usersById[userId];
 	if (!user) return;
 
-	// Default to project admin for instance owners and admins
-	let role = firstLicensedRole.value;
+	const role = firstLicensedRole.value;
 	if (!role) return;
-
-	// If user is instance owner or admin, default to project admin
-	if (user.role === ROLE.Owner || user.role === ROLE.Admin) {
-		const projectAdminRole = rolesStore.processedProjectRoles.find(
-			(r) => r.slug === 'project:admin' && r.licensed,
-		);
-		if (projectAdminRole) {
-			role = 'project:admin';
-		}
-	}
 
 	// Optimistically update UI
 	if (!formData.value.relations.find((r) => r.id === userId)) {
@@ -475,7 +463,7 @@ watch(shouldShowSearch, (show) => {
 
 const debouncedSearch = useDebounceFn(() => {
 	membersTableState.value.page = 0; // Reset to first page on search
-}, getDebounceTime(DEBOUNCE_TIME.INPUT.SEARCH));
+}, 300);
 
 const onSearch = (value: string) => {
 	search.value = value;

@@ -123,10 +123,9 @@ describe('SettingsUsageAndPlan', () => {
 		expect(container.querySelector('.n8n-badge')).toHaveTextContent('Registered');
 	});
 
-	it('should show correct success message for non-EULA activation (edition)', async () => {
+	it('should correctly call activateLicense on non-eula acceptance', async () => {
 		usageStore.isLoading = false;
 		usageStore.planName = 'Community';
-		usageStore.planId = '';
 		usersStore.currentUser = {
 			globalScopes: ['license:manage'],
 		} as IUser;
@@ -148,39 +147,6 @@ describe('SettingsUsageAndPlan', () => {
 		expect(mockToast.showMessage).toHaveBeenCalledWith(
 			expect.objectContaining({
 				type: 'success',
-				title: 'License activated',
-				message: 'Your Community Edition has been successfully activated.',
-			}),
-		);
-	});
-
-	it('should show correct success message for non-EULA activation (plan)', async () => {
-		usageStore.isLoading = false;
-		usageStore.planName = 'Business';
-		usageStore.planId = 'business-2024';
-		usersStore.currentUser = {
-			globalScopes: ['license:manage'],
-		} as IUser;
-		rbacStore.setGlobalScopes(['license:manage']);
-		usageStore.activateLicense.mockImplementation(async () => {});
-
-		const { getByRole } = renderComponent();
-
-		await userEvent.click(getByRole('button', { name: /activation/i }));
-		const input = document.querySelector('input') as HTMLInputElement;
-		await userEvent.type(input, 'test-key-123');
-		await userEvent.click(getByRole('button', { name: /activate/i }));
-
-		await waitFor(() => {
-			expect(usageStore.activateLicense).toHaveBeenCalledTimes(1);
-			expect(usageStore.activateLicense).toHaveBeenLastCalledWith('test-key-123', undefined);
-		});
-
-		expect(mockToast.showMessage).toHaveBeenCalledWith(
-			expect.objectContaining({
-				type: 'success',
-				title: 'License activated',
-				message: 'Your Business Plan has been successfully activated.',
 			}),
 		);
 	});
@@ -218,7 +184,7 @@ describe('SettingsUsageAndPlan', () => {
 
 		it('should handle EULA acceptance and retry license activation', async () => {
 			usageStore.isLoading = false;
-			usageStore.planName = 'Enterprise';
+			usageStore.planName = 'Community';
 			usersStore.currentUser = {
 				globalScopes: ['license:manage'],
 			} as IUser;
@@ -240,7 +206,9 @@ describe('SettingsUsageAndPlan', () => {
 			const eulaModal = await findByTestId('eula-acceptance-modal');
 			expect(eulaModal).toBeInTheDocument();
 
-			const checkbox = await findByTestId('eula-checkbox');
+			const checkbox = (await findByTestId('eula-checkbox')).querySelector(
+				'input[type="checkbox"]',
+			) as HTMLInputElement;
 			await userEvent.click(checkbox);
 
 			const acceptButton = await findByTestId('eula-accept-button');
@@ -257,8 +225,6 @@ describe('SettingsUsageAndPlan', () => {
 			expect(mockToast.showMessage).toHaveBeenCalledWith(
 				expect.objectContaining({
 					type: 'success',
-					title: 'License activated',
-					message: 'You have accepted the EULA and successfully activated your Enterprise plan.',
 				}),
 			);
 		});
@@ -320,7 +286,9 @@ describe('SettingsUsageAndPlan', () => {
 			expect(eulaModal).toBeInTheDocument();
 
 			// Accept EULA
-			const checkbox = await findByTestId('eula-checkbox');
+			const checkbox = (await findByTestId('eula-checkbox')).querySelector(
+				'input[type="checkbox"]',
+			) as HTMLInputElement;
 			await userEvent.click(checkbox);
 
 			const acceptButton = await findByTestId('eula-accept-button');

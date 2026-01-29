@@ -157,6 +157,25 @@ describe('chatPanel.store', () => {
 			expect(builderStore.fetchBuilderCredits).not.toHaveBeenCalled();
 			expect(builderStore.loadSessions).not.toHaveBeenCalled();
 		});
+
+		it('should not fetch credits or load sessions when messages already exist', async () => {
+			mockRoute.name = BUILDER_ENABLED_VIEWS[0];
+			builderStore.chatMessages = [
+				{
+					id: '1',
+					role: 'user',
+					type: 'text',
+					content: 'test',
+					read: true,
+				} as ChatUI.AssistantMessage,
+			];
+
+			await chatPanelStore.open({ mode: 'builder' });
+
+			expect(chatPanelStateStore.isOpen).toBe(true);
+			expect(builderStore.fetchBuilderCredits).not.toHaveBeenCalled();
+			expect(builderStore.loadSessions).not.toHaveBeenCalled();
+		});
 	});
 
 	describe('close', () => {
@@ -177,6 +196,14 @@ describe('chatPanel.store', () => {
 			vi.runAllTimers();
 
 			expect(uiStore.appGridDimensions.width).toBe(window.innerWidth);
+		});
+
+		it('should reset builder chat after timeout', () => {
+			chatPanelStore.close();
+
+			vi.runAllTimers();
+
+			expect(builderStore.resetBuilderChat).toHaveBeenCalled();
 		});
 
 		it('should reset assistant chat only if session ended', () => {
@@ -240,14 +267,6 @@ describe('chatPanel.store', () => {
 			expect(chatPanelStateStore.activeMode).toBe('assistant');
 			expect(chatPanelStore.isAssistantModeActive).toBe(true);
 			expect(chatPanelStore.isBuilderModeActive).toBe(false);
-		});
-
-		it('should set showCoachmark to false when switching modes', () => {
-			expect(chatPanelStateStore.showCoachmark).toBe(true);
-
-			chatPanelStore.switchMode('assistant');
-
-			expect(chatPanelStateStore.showCoachmark).toBe(false);
 		});
 
 		it('should switch from assistant to builder mode', () => {
@@ -349,42 +368,6 @@ describe('chatPanel.store', () => {
 		});
 	});
 
-	describe('showCoachmark tracking', () => {
-		it('should set showCoachmark to true by default when opening', async () => {
-			mockRoute.name = BUILDER_ENABLED_VIEWS[0];
-
-			await chatPanelStore.open({ mode: 'builder' });
-
-			expect(chatPanelStateStore.showCoachmark).toBe(true);
-		});
-
-		it('should allow overriding showCoachmark when opening', async () => {
-			mockRoute.name = BUILDER_ENABLED_VIEWS[0];
-
-			await chatPanelStore.open({ mode: 'builder', showCoachmark: false });
-
-			expect(chatPanelStateStore.showCoachmark).toBe(false);
-		});
-
-		it('should set showCoachmark to false when closing', async () => {
-			mockRoute.name = BUILDER_ENABLED_VIEWS[0];
-			await chatPanelStore.open({ mode: 'builder' });
-			expect(chatPanelStateStore.showCoachmark).toBe(true);
-
-			chatPanelStore.close();
-
-			expect(chatPanelStateStore.showCoachmark).toBe(false);
-		});
-
-		it('should expose showCoachmark as computed property', async () => {
-			mockRoute.name = BUILDER_ENABLED_VIEWS[0];
-
-			await chatPanelStore.open({ mode: 'builder' });
-
-			expect(chatPanelStore.showCoachmark).toBe(true);
-		});
-	});
-
 	describe('computed properties', () => {
 		it('should compute isAssistantModeActive correctly', () => {
 			chatPanelStateStore.activeMode = 'assistant';
@@ -481,6 +464,7 @@ describe('chatPanel.store', () => {
 			mockRoute.name = BUILDER_ENABLED_VIEWS[0];
 			await chatPanelStore.open({ mode: 'builder' });
 			builderStore.streaming = false;
+			builderStore.resetBuilderChat.mockClear();
 
 			// Navigate to executions view (not a builder view, triggers close)
 			mockRoute.name = VIEWS.EXECUTIONS;
@@ -489,9 +473,8 @@ describe('chatPanel.store', () => {
 			// Run timers for the close timeout
 			vi.runAllTimers();
 
-			// Builder chat should be closed since we're not streaming, but not reset
-			expect(chatPanelStore.isOpen).toEqual(false);
-			expect(builderStore.resetBuilderChat).not.toHaveBeenCalled();
+			// Builder chat should be reset since we're not streaming
+			expect(builderStore.resetBuilderChat).toHaveBeenCalled();
 		});
 	});
 });

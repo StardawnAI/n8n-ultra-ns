@@ -328,7 +328,8 @@ describe('ProjectRoleView', () => {
 			await waitFor(() => expect(getByTestId('scope-checkbox-project:update')).toBeInTheDocument());
 
 			// Find the checkbox by its label text
-			const checkbox = getByTestId('scope-checkbox-project:update');
+			const label = getByTestId('scope-checkbox-project:update');
+			const checkbox = label.querySelector('input[type="checkbox"]') as HTMLInputElement;
 
 			// Initially unchecked
 			expect(checkbox).not.toBeChecked();
@@ -480,8 +481,9 @@ describe('ProjectRoleView', () => {
 			});
 
 			const scopeCheckbox = getByTestId('scope-checkbox-project:update');
+			const checkbox = scopeCheckbox.querySelector('input[type="checkbox"]') as HTMLInputElement;
 
-			await userEvent.click(scopeCheckbox);
+			await userEvent.click(checkbox);
 			await waitForEditButtonsToBe(getByText, 'enabled');
 		});
 	});

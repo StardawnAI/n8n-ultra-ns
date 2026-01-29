@@ -89,7 +89,7 @@ async function openTemplateCredentialSetup(opts: {
  * Opens the given template's workflow on NodeView. Fires necessary
  * telemetry events.
  */
-export async function openTemplateWorkflowOnNodeView(opts: {
+async function openTemplateWorkflowOnNodeView(opts: {
 	externalHooks: ExternalHooks;
 	templateId: string;
 	templatesStore: TemplatesStore;

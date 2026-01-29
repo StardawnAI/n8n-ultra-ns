@@ -1,14 +1,13 @@
 import { onMounted, onUnmounted, watch } from 'vue';
 import { useDebounceFn } from '@vueuse/core';
 import { useCollaborationStore } from '@/features/collaboration/collaboration/collaboration.store';
-import { DEBOUNCE_TIME, getDebounceTime } from '@/app/constants/durations';
 
 export function useActivityDetection() {
 	const collaborationStore = useCollaborationStore();
 
 	const recordActivity = useDebounceFn(() => {
 		collaborationStore.recordActivity();
-	}, getDebounceTime(DEBOUNCE_TIME.COLLABORATION.ACTIVITY));
+	}, 100);
 
 	const events = ['mousedown', 'keydown', 'touchstart'];
 

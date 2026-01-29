@@ -10,7 +10,6 @@ export const WorkflowExecutionStatusSchema = z.object({
 				credentialType: z.string(),
 				credentialStatus: z.enum(['missing', 'configured']),
 				authorizationUrl: z.string().optional(),
-				revokeUrl: z.string().optional(),
 			}),
 		)
 		.optional(),

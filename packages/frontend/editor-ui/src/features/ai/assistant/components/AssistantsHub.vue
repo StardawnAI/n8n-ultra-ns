@@ -4,12 +4,13 @@ import { useChatPanelStore } from '@/features/ai/assistant/chatPanel.store';
 import { useAssistantStore } from '@/features/ai/assistant/assistant.store';
 import { useSettingsStore } from '@/app/stores/settings.store';
 import { useDebounce } from '@/app/composables/useDebounce';
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import SlideTransition from '@/app/components/transitions/SlideTransition.vue';
 import AskAssistantBuild from './Agent/AskAssistantBuild.vue';
 import AskAssistantChat from './Chat/AskAssistantChat.vue';
-import AskModeCoachmark from './AskModeCoachmark.vue';
-import { useAskModeCoachmark } from '../composables/useAskModeCoachmark';
+import { useRoute } from 'vue-router';
+import { BUILDER_ENABLED_VIEWS } from '../constants';
+import type { VIEWS } from '@/app/constants';
 
 import { N8nResizeWrapper } from '@n8n/design-system';
 import HubSwitcher from '@/features/ai/assistant/components/HubSwitcher.vue';
@@ -18,28 +19,24 @@ const builderStore = useBuilderStore();
 const assistantStore = useAssistantStore();
 const chatPanelStore = useChatPanelStore();
 const settingsStore = useSettingsStore();
-
-const { isBuildMode, canToggleModes, shouldShowCoachmark, onDismissCoachmark } =
-	useAskModeCoachmark();
-
-// Track when slide animation has completed to prevent coachmark from appearing off-screen
-const slideAnimationComplete = ref(false);
-const canShowCoachmark = computed(() => shouldShowCoachmark.value && slideAnimationComplete.value);
-
-// Reset animation state when panel closes
-watch(
-	() => chatPanelStore.isOpen,
-	(isOpen) => {
-		if (!isOpen) {
-			slideAnimationComplete.value = false;
-		}
-	},
-);
+const route = useRoute();
 
 const askAssistantBuildRef = ref<InstanceType<typeof AskAssistantBuild>>();
 const askAssistantChatRef = ref<InstanceType<typeof AskAssistantChat>>();
 
+const isBuildMode = computed(() => chatPanelStore.isBuilderModeActive);
 const chatWidth = computed(() => chatPanelStore.width);
+
+// Show toggle only when both modes are available in current view
+const canToggleModes = computed(() => {
+	const currentRoute = route?.name;
+	return (
+		settingsStore.isAiAssistantEnabled &&
+		builderStore.isAIBuilderEnabled &&
+		currentRoute &&
+		BUILDER_ENABLED_VIEWS.includes(currentRoute as VIEWS)
+	);
+});
 
 function onResize(data: { direction: string; x: number; width: number }) {
 	chatPanelStore.updateWidth(data.width);
@@ -80,7 +77,6 @@ function onClose() {
 }
 
 function onSlideEnterComplete() {
-	slideAnimationComplete.value = true;
 	if (isBuildMode.value) {
 		askAssistantBuildRef.value?.focusInput();
 	} else {
@@ -144,9 +140,7 @@ onBeforeUnmount(() => {
 					<AskAssistantChat v-else ref="askAssistantChatRef" @close="onClose">
 						<!-- Header switcher is only visible when both modes are available in current view -->
 						<template v-if="canToggleModes" #header>
-							<AskModeCoachmark :visible="canShowCoachmark" @dismiss="onDismissCoachmark">
-								<HubSwitcher :is-build-mode="isBuildMode" @toggle="toggleAssistantMode" />
-							</AskModeCoachmark>
+							<HubSwitcher :is-build-mode="isBuildMode" @toggle="toggleAssistantMode" />
 						</template>
 					</AskAssistantChat>
 				</div>

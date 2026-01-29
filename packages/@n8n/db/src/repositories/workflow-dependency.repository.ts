@@ -52,6 +52,9 @@ export class WorkflowDependencyRepository extends Repository<WorkflowDependency>
 		workflowId: string,
 		dependencies: WorkflowDependencies,
 	): Promise<boolean> {
+		if (this.databaseConfig.isLegacySqlite) {
+			throw new Error('Workflow dependency indexing is not supported on legacy SQLite databases');
+		}
 		return await this.manager.transaction(async (tx) => {
 			return await this.executeUpdate(workflowId, dependencies, tx);
 		});
@@ -106,6 +109,9 @@ export class WorkflowDependencyRepository extends Repository<WorkflowDependency>
 	 * @returns Whether any dependencies were removed
 	 */
 	async removeDependenciesForWorkflow(workflowId: string): Promise<boolean> {
+		if (this.databaseConfig.isLegacySqlite) {
+			throw new Error('Workflow dependency indexing is not supported on legacy SQLite databases');
+		}
 		return await this.manager.transaction(async (tx) => {
 			const deleteResult = await tx.delete(WorkflowDependency, { workflowId });
 

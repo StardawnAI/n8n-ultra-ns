@@ -1,7 +1,13 @@
 import FormData from 'form-data';
 import isEmpty from 'lodash/isEmpty';
 import { extension } from 'mime-types';
-import type { IDataObject, IExecuteFunctions, INode } from 'n8n-workflow';
+import type {
+	IBinaryKeyData,
+	IDataObject,
+	IExecuteFunctions,
+	INode,
+	INodeExecutionData,
+} from 'n8n-workflow';
 import { jsonParse, NodeApiError, NodeOperationError } from 'n8n-workflow';
 
 import { getSendAndWaitConfig } from '../../../../utils/sendAndWait/utils';
@@ -169,6 +175,7 @@ export function prepareEmbeds(this: IExecuteFunctions, embeds: IDataObject[]) {
 
 export async function prepareMultiPartForm(
 	this: IExecuteFunctions,
+	items: INodeExecutionData[],
 	files: IDataObject[],
 	jsonPayload: IDataObject,
 	i: number,
@@ -178,7 +185,7 @@ export async function prepareMultiPartForm(
 	const filesData: IDataObject[] = [];
 
 	for (const [index, file] of files.entries()) {
-		const binaryData = this.helpers.assertBinaryData(i, file.inputFieldName as string);
+		const binaryData = (items[i].binary as IBinaryKeyData)?.[file.inputFieldName as string];
 
 		if (!binaryData) {
 			throw new NodeOperationError(
@@ -289,6 +296,7 @@ export async function sendDiscordMessage(
 		userGuilds,
 		isOAuth2,
 		body,
+		items,
 		files = [],
 		itemIndex = 0,
 	}: {
@@ -296,6 +304,7 @@ export async function sendDiscordMessage(
 		userGuilds: IDataObject[];
 		isOAuth2: boolean;
 		body: IDataObject;
+		items: INodeExecutionData[];
 		files?: IDataObject[];
 		itemIndex?: number;
 	},
@@ -363,7 +372,7 @@ export async function sendDiscordMessage(
 	let response: IDataObject[] = [];
 
 	if (files?.length) {
-		const multiPartBody = await prepareMultiPartForm.call(this, files, body, itemIndex);
+		const multiPartBody = await prepareMultiPartForm.call(this, items, files, body, itemIndex);
 
 		response = await discordApiMultiPartRequest.call(
 			this,

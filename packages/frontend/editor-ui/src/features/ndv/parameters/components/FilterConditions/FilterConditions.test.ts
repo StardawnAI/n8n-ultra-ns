@@ -11,7 +11,6 @@ import get from 'lodash/get';
 import type { FilterOptionsValue, FilterTypeOptions, FilterValue } from 'n8n-workflow';
 import FilterConditions from './FilterConditions.vue';
 import { getFilterOperator } from './utils';
-import { flushPromises } from '@vue/test-utils';
 
 vi.mock('vue-router');
 
@@ -51,9 +50,8 @@ const renderComponent = createComponentRenderer(FilterConditions, DEFAULT_SETUP)
 describe('FilterConditions.vue', () => {
 	beforeEach(cleanup);
 
-	afterEach(async () => {
+	afterEach(() => {
 		vi.clearAllMocks();
-		await flushPromises();
 	});
 
 	it('renders default state properly', async () => {
@@ -486,7 +484,7 @@ describe('FilterConditions.vue', () => {
 		// No emission on initial render
 		expect(emitted('valueChanged')).toBeUndefined();
 
-		vi.spyOn(workFlowHelpers, 'resolveParameter').mockResolvedValue({ caseSensitive: false });
+		vi.spyOn(workFlowHelpers, 'resolveParameter').mockReturnValue({ caseSensitive: false });
 
 		// Change caseSensitive and also change node.parameters to trigger the watcher
 		await rerender({
@@ -511,7 +509,7 @@ describe('FilterConditions.vue', () => {
 	});
 
 	it('should auto-change operator type when dropping a value', async () => {
-		vi.spyOn(workFlowHelpers, 'resolveParameter').mockResolvedValue({
+		vi.spyOn(workFlowHelpers, 'resolveParameter').mockReturnValue({
 			leftValue: 42,
 			rightValue: 42,
 		});
@@ -544,9 +542,6 @@ describe('FilterConditions.vue', () => {
 			},
 		});
 
-		// Wait for async type inference to complete
-		await waitFor(() => {
-			expect(get(emitted('valueChanged'), '0.0.value.conditions.0.operator.type')).toBe('number');
-		});
+		expect(get(emitted('valueChanged'), '0.0.value.conditions.0.operator.type')).toBe('number');
 	});
 });

@@ -42,6 +42,8 @@ export class TaskRunnersConfig {
 
 	/**
 	 * How many concurrent tasks can a runner execute at a time
+	 *
+	 * Kept high for backwards compatibility - n8n v2 will reduce this to `5`
 	 */
 	@Env('N8N_RUNNERS_MAX_CONCURRENCY')
 	maxConcurrency: number = 10;
@@ -51,7 +53,7 @@ export class TaskRunnersConfig {
 	 * task will be aborted. (In internal mode, the runner will also be
 	 * restarted.) Must be greater than 0.
 	 *
-	 * Kept high for backwards compatibility - n8n v3 will reduce this to `60`
+	 * Kept high for backwards compatibility - n8n v2 will reduce this to `60`
 	 */
 	@Env('N8N_RUNNERS_TASK_TIMEOUT')
 	taskTimeout: number = 300; // 5 minutes

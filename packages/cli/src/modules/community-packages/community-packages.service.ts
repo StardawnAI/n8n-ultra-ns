@@ -32,7 +32,7 @@ import { toError } from '@/utils';
 
 import { CommunityPackagesConfig } from './community-packages.config';
 import type { CommunityPackages } from './community-packages.types';
-import { getCommunityNodeTypes, StrapiCommunityNodeType } from './community-node-types-utils';
+import { getCommunityNodeTypes } from './community-node-types-utils';
 import { InstalledPackages } from './installed-packages.entity';
 import { InstalledPackagesRepository } from './installed-packages.repository';
 import { checkIfVersionExistsOrThrow, verifyIntegrity } from './npm-utils';
@@ -327,44 +327,19 @@ export class CommunityPackagesService {
 				missingPackages: [...missingPackages],
 			});
 			const environment = process.env.ENVIRONMENT === 'staging' ? 'staging' : 'production';
+			const vettedPackages = await getCommunityNodeTypes(environment);
 
-			const packageNames = [...missingPackages].map((p) => p.packageName);
-
-			let vettedPackages: StrapiCommunityNodeType[] = [];
-			try {
-				vettedPackages = await getCommunityNodeTypes(environment, {
-					filters: {
-						packageName: {
-							$in: packageNames,
-						},
-					},
-					fields: ['packageName', 'npmVersion', 'checksum', 'nodeVersions'],
-				});
-			} catch (error) {
-				this.logger.error(
-					`Failed to fetch community packages from Strapi: ${ensureError(error).message}`,
-				);
+			const checksums = new Map<string, Map<string, string>>();
+			for (const p of vettedPackages) {
+				const versionMap = new Map<string, string>();
+				versionMap.set(p.npmVersion, p.checksum);
+				for (const v of p.nodeVersions ?? []) versionMap.set(v.npmVersion, v.checksum);
+				checksums.set(p.packageName, versionMap);
 			}
 
 			for (const missingPackage of missingPackages) {
 				try {
-					const vettedPackage = vettedPackages.find(
-						(p) => p.packageName === missingPackage.packageName,
-					);
-
-					let checksum: string | undefined;
-					if (vettedPackage) {
-						// Get the checksum if the required version is latest
-						if (vettedPackage.npmVersion === missingPackage.version) {
-							checksum = vettedPackage.checksum;
-						} else {
-							// Get the checksum if the required version is not latest
-							checksum = vettedPackage.nodeVersions?.find(
-								(v) => v.npmVersion === missingPackage.version,
-							)?.checksum;
-						}
-					}
-
+					const checksum = checksums.get(missingPackage.packageName)?.get(missingPackage.version);
 					await this.installPackage(missingPackage.packageName, missingPackage.version, checksum);
 					missingPackages.delete(missingPackage);
 				} catch (error) {
@@ -379,7 +354,6 @@ export class CommunityPackagesService {
 			}
 
 			await this.loadNodesAndCredentials.postProcessLoaders();
-			this.loadNodesAndCredentials.releaseTypes();
 		} else {
 			this.logger.warn(
 				'n8n detected that some packages are missing. For more information, visit https://docs.n8n.io/integrations/community-nodes/troubleshooting/',
@@ -486,7 +460,6 @@ export class CommunityPackagesService {
 					payload: { packageName, packageVersion },
 				});
 				await this.loadNodesAndCredentials.postProcessLoaders();
-				this.loadNodesAndCredentials.releaseTypes();
 				this.logger.info(`Community package installed: ${packageName}`);
 				return installedPackage;
 			} catch (error) {
@@ -520,10 +493,8 @@ export class CommunityPackagesService {
 
 	private async installOrUpdateNpmPackage(packageName: string, packageVersion: string) {
 		await this.downloadPackage(packageName, packageVersion);
-		await this.loadNodesAndCredentials.unloadPackage(packageName);
 		await this.loadNodesAndCredentials.loadPackage(packageName);
 		await this.loadNodesAndCredentials.postProcessLoaders();
-		this.loadNodesAndCredentials.releaseTypes();
 		this.logger.info(`Community package installed: ${packageName}`);
 	}
 
@@ -531,7 +502,6 @@ export class CommunityPackagesService {
 		await this.deletePackageDirectory(packageName);
 		await this.loadNodesAndCredentials.unloadPackage(packageName);
 		await this.loadNodesAndCredentials.postProcessLoaders();
-		this.loadNodesAndCredentials.releaseTypes();
 		this.logger.info(`Community package uninstalled: ${packageName}`);
 	}
 

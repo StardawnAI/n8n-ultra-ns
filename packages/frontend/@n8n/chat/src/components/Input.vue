@@ -7,11 +7,7 @@ import { computed, onMounted, onUnmounted, ref, unref } from 'vue';
 
 import { useI18n, useChat, useOptions } from '@n8n/chat/composables';
 import { chatEventBus } from '@n8n/chat/event-buses';
-import {
-	constructChatWebsocketUrl,
-	parseBotChatMessageContent,
-	shouldBlockUserInput,
-} from '@n8n/chat/utils';
+import { constructChatWebsocketUrl } from '@n8n/chat/utils';
 
 import ChatFile from './ChatFile.vue';
 import type { ChatMessage } from '../types';
@@ -51,7 +47,6 @@ const resizeObserver = ref<ResizeObserver | null>(null);
 const waitingForChatResponse = ref(false);
 
 const isSubmitDisabled = computed(() => {
-	if (chatStore.blockUserInput.value) return true;
 	if (waitingForChatResponse.value) return false;
 	return input.value === '' || unref(waitingForResponse) || options.disabled?.value === true;
 });
@@ -176,19 +171,21 @@ function setupWebsocketConnection(executionId: string) {
 					chatStore.waitingForResponse.value = true;
 					return;
 				}
+				const newMessage: ChatMessage = {
+					id: uuidv4(),
+					text: e.data,
+					sender: 'bot',
+				};
 
-				const newMessage = parseBotChatMessageContent(e.data as string);
 				chatStore.messages.value.push(newMessage);
 				waitingForChatResponse.value = true;
 				chatStore.waitingForResponse.value = false;
-				chatStore.blockUserInput.value = shouldBlockUserInput(newMessage);
 			};
 
 			chatStore.ws.onclose = () => {
 				chatStore.ws = null;
 				waitingForChatResponse.value = false;
 				chatStore.waitingForResponse.value = false;
-				chatStore.blockUserInput.value = false;
 			};
 		} catch (error) {
 			// do not throw error here as it should work with n8n versions that do not support websockets

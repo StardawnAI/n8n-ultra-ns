@@ -23,5 +23,4 @@ export type WorkflowOperation =
 			sourceOutputIndex: number;
 			targetInputIndex: number;
 	  }
-	| { type: 'setName'; name: string }
-	| { type: 'renameNode'; nodeId: string; oldName: string; newName: string };
+	| { type: 'setName'; name: string };

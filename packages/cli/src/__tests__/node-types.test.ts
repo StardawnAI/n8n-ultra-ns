@@ -7,11 +7,13 @@ import type {
 	INodeTypeDescription,
 } from 'n8n-workflow';
 
-import type { LoadNodesAndCredentials } from '@/load-nodes-and-credentials';
+import { LoadNodesAndCredentials } from '@/load-nodes-and-credentials';
 import { NodeTypes } from '@/node-types';
 
 describe('NodeTypes', () => {
-	const loadNodesAndCredentials = mock<LoadNodesAndCredentials>();
+	const loadNodesAndCredentials = mock<LoadNodesAndCredentials>({
+		convertNodeToAiTool: LoadNodesAndCredentials.prototype.convertNodeToAiTool,
+	});
 
 	const nodeTypes: NodeTypes = new NodeTypes(loadNodesAndCredentials);
 

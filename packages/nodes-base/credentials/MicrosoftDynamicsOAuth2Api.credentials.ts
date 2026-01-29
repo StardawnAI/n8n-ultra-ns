@@ -107,11 +107,5 @@ export class MicrosoftDynamicsOAuth2Api implements ICredentialType {
 			type: 'hidden',
 			default: '=openid offline_access https://{{$self.subdomain}}.{{$self.region}}/.default',
 		},
-		{
-			displayName: 'Microsoft Graph API Base URL',
-			name: 'graphApiBaseUrl',
-			type: 'hidden',
-			default: 'https://graph.microsoft.com',
-		},
 	];
 }

@@ -12,8 +12,6 @@ import { workflowDetailsOutputSchema } from './schemas';
 import { getTriggerDetails, type WebhookEndpoints } from './webhook-utils';
 
 import type { CredentialsService } from '@/credentials/credentials.service';
-import type { ProjectService } from '@/services/project.service.ee';
-import type { RoleService } from '@/services/role.service';
 import type { Telemetry } from '@/telemetry';
 import type { WorkflowFinderService } from '@/workflows/workflow-finder.service';
 
@@ -35,8 +33,6 @@ export const createWorkflowDetailsTool = (
 	credentialsService: CredentialsService,
 	endpoints: WebhookEndpoints,
 	telemetry: Telemetry,
-	roleService: RoleService,
-	projectService: ProjectService,
 ): ToolDefinition<typeof inputSchema> => {
 	return {
 		name: 'get_workflow_details',
@@ -67,8 +63,6 @@ export const createWorkflowDetailsTool = (
 					workflowFinderService,
 					credentialsService,
 					endpoints,
-					roleService,
-					projectService,
 					{ workflowId },
 				);
 
@@ -107,8 +101,6 @@ export async function getWorkflowDetails(
 	workflowFinderService: WorkflowFinderService,
 	credentialsService: CredentialsService,
 	endpoints: WebhookEndpoints,
-	roleService: RoleService,
-	projectService: ProjectService,
 	{ workflowId }: { workflowId: string },
 ): Promise<WorkflowDetailsResult> {
 	const workflow = await workflowFinderService.findWorkflowForUser(
@@ -120,12 +112,6 @@ export async function getWorkflowDetails(
 	if (!workflow || workflow.isArchived || !workflow.settings?.availableInMCP) {
 		throw new UserError('Workflow not found');
 	}
-
-	// Compute user scopes for this workflow
-	const projectRelations = await projectService.getProjectRelationsForUser(user);
-	const workflowWithScopes = roleService.addScopes(workflow, user, projectRelations);
-	const scopes = workflowWithScopes.scopes ?? [];
-	const canExecute = scopes.includes('workflow:execute');
 
 	const nodes = workflow.activeVersion?.nodes ?? [];
 	const connections = workflow.activeVersion?.connections ?? {};
@@ -159,8 +145,6 @@ export async function getWorkflowDetails(
 		meta: workflow.meta ?? null,
 		parentFolderId: workflow.parentFolder?.id ?? null,
 		description: workflow.description ?? undefined,
-		scopes,
-		canExecute,
 	};
 
 	return { workflow: sanitizedWorkflow, triggerInfo: triggerNotice };

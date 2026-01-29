@@ -1,8 +1,10 @@
 import type { INode, INodeTypeDescription, IConnections, NodeConnectionType } from 'n8n-workflow';
-import { NodeConnectionTypes, NodeHelpers } from 'n8n-workflow';
+import { NodeConnectionTypes } from 'n8n-workflow';
 
 import {
 	validateConnection,
+	nodeHasOutputType,
+	nodeAcceptsInputType,
 	createConnection,
 	removeConnection,
 	getNodeConnections,
@@ -245,9 +247,9 @@ describe('connection.utils', () => {
 
 	describe('nodeHasOutputType', () => {
 		it('should find output type in array', () => {
-			expect(NodeHelpers.nodeHasOutputType(mockSubNodeType, 'ai_embedding')).toBe(true);
-			expect(NodeHelpers.nodeHasOutputType(mockSubNodeType, 'ai_tool')).toBe(true);
-			expect(NodeHelpers.nodeHasOutputType(mockSubNodeType, 'ai_document')).toBe(false);
+			expect(nodeHasOutputType(mockSubNodeType, 'ai_embedding')).toBe(true);
+			expect(nodeHasOutputType(mockSubNodeType, 'ai_tool')).toBe(true);
+			expect(nodeHasOutputType(mockSubNodeType, 'ai_document')).toBe(false);
 		});
 
 		it('should handle string outputs', () => {
@@ -255,8 +257,8 @@ describe('connection.utils', () => {
 				...mockMainNodeType,
 				outputs: ['main'],
 			};
-			expect(NodeHelpers.nodeHasOutputType(stringOutputNode, NodeConnectionTypes.Main)).toBe(true);
-			expect(NodeHelpers.nodeHasOutputType(stringOutputNode, 'ai_embedding')).toBe(false);
+			expect(nodeHasOutputType(stringOutputNode, NodeConnectionTypes.Main)).toBe(true);
+			expect(nodeHasOutputType(stringOutputNode, 'ai_embedding')).toBe(false);
 		});
 
 		it('should handle expression outputs containing type', () => {
@@ -264,10 +266,8 @@ describe('connection.utils', () => {
 				...mockMainNodeType,
 				outputs: "={{ $parameter.mode === 'tool' ? ['ai_tool'] : ['main'] }}",
 			};
-			expect(NodeHelpers.nodeHasOutputType(expressionOutputNode, 'ai_tool')).toBe(true);
-			expect(NodeHelpers.nodeHasOutputType(expressionOutputNode, NodeConnectionTypes.Main)).toBe(
-				true,
-			);
+			expect(nodeHasOutputType(expressionOutputNode, 'ai_tool')).toBe(true);
+			expect(nodeHasOutputType(expressionOutputNode, NodeConnectionTypes.Main)).toBe(true);
 		});
 
 		it('should handle object outputs', () => {
@@ -275,8 +275,8 @@ describe('connection.utils', () => {
 				...mockMainNodeType,
 				outputs: [{ type: NodeConnectionTypes.Main }, { type: 'ai_embedding' }],
 			};
-			expect(NodeHelpers.nodeHasOutputType(objectOutputNode, NodeConnectionTypes.Main)).toBe(true);
-			expect(NodeHelpers.nodeHasOutputType(objectOutputNode, 'ai_embedding')).toBe(true);
+			expect(nodeHasOutputType(objectOutputNode, NodeConnectionTypes.Main)).toBe(true);
+			expect(nodeHasOutputType(objectOutputNode, 'ai_embedding')).toBe(true);
 		});
 
 		it('should handle nodes without outputs', () => {
@@ -284,7 +284,7 @@ describe('connection.utils', () => {
 				...mockMainNodeType,
 				outputs: [],
 			};
-			expect(NodeHelpers.nodeHasOutputType(noOutputNode, NodeConnectionTypes.Main)).toBe(false);
+			expect(nodeHasOutputType(noOutputNode, NodeConnectionTypes.Main)).toBe(false);
 		});
 
 		it('should handle empty array outputs', () => {
@@ -292,7 +292,7 @@ describe('connection.utils', () => {
 				...mockMainNodeType,
 				outputs: [],
 			};
-			expect(NodeHelpers.nodeHasOutputType(emptyOutputNode, NodeConnectionTypes.Main)).toBe(false);
+			expect(nodeHasOutputType(emptyOutputNode, NodeConnectionTypes.Main)).toBe(false);
 		});
 
 		it('should handle mixed array outputs (strings and objects)', () => {
@@ -300,19 +300,17 @@ describe('connection.utils', () => {
 				...mockMainNodeType,
 				outputs: [NodeConnectionTypes.Main, { type: 'ai_embedding' }, 'ai_tool'],
 			};
-			expect(NodeHelpers.nodeHasOutputType(mixedOutputNode, NodeConnectionTypes.Main)).toBe(true);
-			expect(NodeHelpers.nodeHasOutputType(mixedOutputNode, 'ai_embedding')).toBe(true);
-			expect(NodeHelpers.nodeHasOutputType(mixedOutputNode, 'ai_tool')).toBe(true);
+			expect(nodeHasOutputType(mixedOutputNode, NodeConnectionTypes.Main)).toBe(true);
+			expect(nodeHasOutputType(mixedOutputNode, 'ai_embedding')).toBe(true);
+			expect(nodeHasOutputType(mixedOutputNode, 'ai_tool')).toBe(true);
 		});
 	});
 
 	describe('nodeAcceptsInputType', () => {
 		it('should find input type in array', () => {
-			expect(NodeHelpers.nodeAcceptsInputType(mockDualNodeType, NodeConnectionTypes.Main)).toBe(
-				true,
-			);
-			expect(NodeHelpers.nodeAcceptsInputType(mockDualNodeType, 'ai_embedding')).toBe(true);
-			expect(NodeHelpers.nodeAcceptsInputType(mockDualNodeType, 'ai_tool')).toBe(false);
+			expect(nodeAcceptsInputType(mockDualNodeType, NodeConnectionTypes.Main)).toBe(true);
+			expect(nodeAcceptsInputType(mockDualNodeType, 'ai_embedding')).toBe(true);
+			expect(nodeAcceptsInputType(mockDualNodeType, 'ai_tool')).toBe(false);
 		});
 
 		it('should handle string inputs', () => {
@@ -320,18 +318,14 @@ describe('connection.utils', () => {
 				...mockMainNodeType,
 				inputs: ['main'],
 			};
-			expect(NodeHelpers.nodeAcceptsInputType(stringInputNode, NodeConnectionTypes.Main)).toBe(
-				true,
-			);
-			expect(NodeHelpers.nodeAcceptsInputType(stringInputNode, 'ai_embedding')).toBe(false);
+			expect(nodeAcceptsInputType(stringInputNode, NodeConnectionTypes.Main)).toBe(true);
+			expect(nodeAcceptsInputType(stringInputNode, 'ai_embedding')).toBe(false);
 		});
 
 		it('should handle expression inputs containing type', () => {
-			expect(NodeHelpers.nodeAcceptsInputType(mockExpressionNodeType, 'ai_tool')).toBe(true);
-			expect(
-				NodeHelpers.nodeAcceptsInputType(mockExpressionNodeType, NodeConnectionTypes.Main),
-			).toBe(true);
-			expect(NodeHelpers.nodeAcceptsInputType(mockExpressionNodeType, 'ai_embedding')).toBe(true);
+			expect(nodeAcceptsInputType(mockExpressionNodeType, 'ai_tool')).toBe(true);
+			expect(nodeAcceptsInputType(mockExpressionNodeType, NodeConnectionTypes.Main)).toBe(true);
+			expect(nodeAcceptsInputType(mockExpressionNodeType, 'ai_embedding')).toBe(true);
 		});
 
 		it('should handle object inputs', () => {
@@ -339,10 +333,8 @@ describe('connection.utils', () => {
 				...mockMainNodeType,
 				inputs: [{ type: NodeConnectionTypes.Main }, { type: 'ai_embedding' }],
 			};
-			expect(NodeHelpers.nodeAcceptsInputType(objectInputNode, NodeConnectionTypes.Main)).toBe(
-				true,
-			);
-			expect(NodeHelpers.nodeAcceptsInputType(objectInputNode, 'ai_embedding')).toBe(true);
+			expect(nodeAcceptsInputType(objectInputNode, NodeConnectionTypes.Main)).toBe(true);
+			expect(nodeAcceptsInputType(objectInputNode, 'ai_embedding')).toBe(true);
 		});
 
 		it('should handle nodes without inputs', () => {
@@ -350,7 +342,7 @@ describe('connection.utils', () => {
 				...mockMainNodeType,
 				inputs: [],
 			};
-			expect(NodeHelpers.nodeAcceptsInputType(noInputNode, NodeConnectionTypes.Main)).toBe(false);
+			expect(nodeAcceptsInputType(noInputNode, NodeConnectionTypes.Main)).toBe(false);
 		});
 
 		it('should handle empty array inputs', () => {
@@ -358,20 +350,16 @@ describe('connection.utils', () => {
 				...mockMainNodeType,
 				inputs: [],
 			};
-			expect(NodeHelpers.nodeAcceptsInputType(emptyInputNode, NodeConnectionTypes.Main)).toBe(
-				false,
-			);
+			expect(nodeAcceptsInputType(emptyInputNode, NodeConnectionTypes.Main)).toBe(false);
 		});
 
 		it('should handle complex expressions with NodeConnectionTypes', () => {
 			// The complex expression has type: 'ai_embedding' in the string
 			// so it should find that type
-			expect(
-				NodeHelpers.nodeAcceptsInputType(mockComplexExpressionNodeType, NodeConnectionTypes.Main),
-			).toBe(false);
-			expect(NodeHelpers.nodeAcceptsInputType(mockComplexExpressionNodeType, 'ai_embedding')).toBe(
-				true,
+			expect(nodeAcceptsInputType(mockComplexExpressionNodeType, NodeConnectionTypes.Main)).toBe(
+				false,
 			);
+			expect(nodeAcceptsInputType(mockComplexExpressionNodeType, 'ai_embedding')).toBe(true);
 		});
 	});
 
@@ -970,7 +958,7 @@ describe('connection.utils', () => {
 				// @ts-expect-error Testing ivalid type
 				inputs: '={{ this is not valid javascript',
 			};
-			expect(NodeHelpers.nodeAcceptsInputType(malformedNode, NodeConnectionTypes.Main)).toBe(false);
+			expect(nodeAcceptsInputType(malformedNode, NodeConnectionTypes.Main)).toBe(false);
 		});
 
 		it('should handle empty expressions', () => {
@@ -979,7 +967,7 @@ describe('connection.utils', () => {
 				// @ts-expect-error Testing ivalid type
 				inputs: '',
 			};
-			expect(NodeHelpers.nodeAcceptsInputType(emptyExprNode, NodeConnectionTypes.Main)).toBe(false);
+			expect(nodeAcceptsInputType(emptyExprNode, NodeConnectionTypes.Main)).toBe(false);
 		});
 
 		it('should handle expressions with no types', () => {
@@ -987,9 +975,7 @@ describe('connection.utils', () => {
 				...mockMainNodeType,
 				inputs: '={{ $parameter.something }}',
 			};
-			expect(NodeHelpers.nodeAcceptsInputType(noTypeExprNode, NodeConnectionTypes.Main)).toBe(
-				false,
-			);
+			expect(nodeAcceptsInputType(noTypeExprNode, NodeConnectionTypes.Main)).toBe(false);
 		});
 
 		it('should handle expressions with return statements', () => {
@@ -997,8 +983,8 @@ describe('connection.utils', () => {
 				...mockMainNodeType,
 				outputs: "={{ return ['main', 'ai_tool'] }}",
 			};
-			expect(NodeHelpers.nodeHasOutputType(returnExprNode, NodeConnectionTypes.Main)).toBe(true);
-			expect(NodeHelpers.nodeHasOutputType(returnExprNode, 'ai_tool')).toBe(true);
+			expect(nodeHasOutputType(returnExprNode, NodeConnectionTypes.Main)).toBe(true);
+			expect(nodeHasOutputType(returnExprNode, 'ai_tool')).toBe(true);
 		});
 	});
 });

@@ -96,7 +96,6 @@ export async function saveCredential(
 		projectId: project?.id,
 		projectType: project?.type,
 		publicApi: true,
-		isDynamic: credential.isResolvable ?? false,
 	});
 
 	return result;

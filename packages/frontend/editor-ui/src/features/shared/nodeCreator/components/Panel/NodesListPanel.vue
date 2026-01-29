@@ -1,39 +1,31 @@
 <script setup lang="ts">
-import type { INodeCreateElement, NodeFilterType, SimplifiedNodeType } from '@/Interface';
+import { computed, onMounted, onUnmounted, watch } from 'vue';
+import type { INodeCreateElement } from '@/Interface';
 import {
-	AI_EVALUATION,
-	AI_NODE_CREATOR_VIEW,
 	AI_OTHERS_NODE_CREATOR_VIEW,
-	AI_UNCATEGORIZED_CATEGORY,
-	HUMAN_IN_THE_LOOP_CATEGORY,
+	AI_NODE_CREATOR_VIEW,
 	REGULAR_NODE_CREATOR_VIEW,
 	TRIGGER_NODE_CREATOR_VIEW,
+	AI_UNCATEGORIZED_CATEGORY,
+	AI_EVALUATION,
 } from '@/app/constants';
-import { computed, onMounted, onUnmounted, watch } from 'vue';
 
 import { useNodeCreatorStore } from '@/features/shared/nodeCreator/nodeCreator.store';
 
-import NodeIcon from '@/app/components/NodeIcon.vue';
-import { useDebounce } from '@/app/composables/useDebounce';
-import { useI18n } from '@n8n/i18n';
+import { TriggerView, RegularView, AIView, AINodesView } from '../../views/viewsData';
+import { useViewStacks } from '../../composables/useViewStacks';
 import { useKeyboardNavigation } from '../../composables/useKeyboardNavigation';
-import { useViewStacks, type ViewStack } from '../../composables/useViewStacks';
-import {
-	AINodesView,
-	AIView,
-	HitlToolView,
-	RegularView,
-	TriggerView,
-	type NodeView,
-} from '../../views/viewsData';
+import SearchBar from './SearchBar.vue';
 import ActionsRenderer from '../Modes/ActionsMode.vue';
 import NodesRenderer from '../Modes/NodesMode.vue';
-import SearchBar from './SearchBar.vue';
+import { useI18n } from '@n8n/i18n';
+import { useDebounce } from '@/app/composables/useDebounce';
+import NodeIcon from '@/app/components/NodeIcon.vue';
 
 import CommunityNodeDetails from '@/features/settings/communityNodes/components/nodeCreator/CommunityNodeDetails.vue';
+import CommunityNodeInfo from '@/features/settings/communityNodes/components/nodeCreator/CommunityNodeInfo.vue';
 import CommunityNodeDocsLink from '@/features/settings/communityNodes/components/nodeCreator/CommunityNodeDocsLink.vue';
 import CommunityNodeFooter from '@/features/settings/communityNodes/components/nodeCreator/CommunityNodeFooter.vue';
-import CommunityNodeInfo from '@/features/settings/communityNodes/components/nodeCreator/CommunityNodeInfo.vue';
 import { useUsersStore } from '@/features/settings/users/users.store';
 
 import { N8nIcon, N8nNotice } from '@n8n/design-system';
@@ -130,44 +122,35 @@ onUnmounted(() => {
 watch(
 	() => nodeCreatorView.value,
 	(selectedView) => {
-		const views: Record<NodeFilterType, (nodes: SimplifiedNodeType[]) => NodeView> = {
+		const views = {
 			[TRIGGER_NODE_CREATOR_VIEW]: TriggerView,
 			[REGULAR_NODE_CREATOR_VIEW]: RegularView,
 			[AI_NODE_CREATOR_VIEW]: AIView,
 			[AI_OTHERS_NODE_CREATOR_VIEW]: AINodesView,
 			[AI_UNCATEGORIZED_CATEGORY]: AINodesView,
 			[AI_EVALUATION]: AINodesView,
-			[HUMAN_IN_THE_LOOP_CATEGORY]: HitlToolView,
 		};
 
-		const additionalOptions: Partial<Record<NodeFilterType, Partial<ViewStack>>> = {
-			// is a root view, but it should behave like a subcategory view
-			[HUMAN_IN_THE_LOOP_CATEGORY]: {
-				hasSearch: false,
-			},
-		};
-
-		const matchedView = views[selectedView];
+		const itemKey = selectedView;
+		const matchedView = views[itemKey];
 
 		if (!matchedView) {
-			console.warn(`No view found for ${selectedView}`);
+			console.warn(`No view found for ${itemKey}`);
 			return;
 		}
 		const view = matchedView(mergedNodes);
-		const viewStack: ViewStack = {
+
+		pushViewStack({
 			title: view.title,
 			subtitle: view?.subtitle ?? '',
 			items: view.items as INodeCreateElement[],
-			nodeIcon: view.nodeIcon,
 			info: view.info,
 			hasSearch: true,
 			mode: 'nodes',
 			rootView: selectedView,
 			// Root search should include all nodes
 			searchItems: mergedNodes,
-			...additionalOptions[selectedView],
-		};
-		pushViewStack(viewStack);
+		});
 	},
 	{ immediate: true },
 );

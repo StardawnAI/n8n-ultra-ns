@@ -1,6 +1,5 @@
 import CanvasNodeTooltip from './CanvasNodeTooltip.vue';
 import { createComponentRenderer } from '@/__tests__/render';
-import { queryTooltip } from '@/__tests__/utils';
 import type { CanvasNodeDefaultRender } from '../../../../../canvas.types';
 import { createCanvasNodeProvide } from '@/features/workflows/canvas/__tests__/utils';
 import { waitFor } from '@testing-library/vue';
@@ -10,7 +9,7 @@ const renderComponent = createComponentRenderer(CanvasNodeTooltip);
 describe('CanvasNodeTooltip', () => {
 	describe('rendering', () => {
 		it('should render tooltip when tooltip option is provided', async () => {
-			renderComponent({
+			const { container, getByText } = renderComponent({
 				props: {
 					visible: true,
 				},
@@ -27,15 +26,12 @@ describe('CanvasNodeTooltip', () => {
 				},
 			});
 
-			await waitFor(() => {
-				const tooltipContent = queryTooltip();
-				expect(tooltipContent).toBeVisible();
-				expect(tooltipContent).toHaveTextContent('Test tooltip text');
-			});
+			expect(getByText('Test tooltip text')).toBeInTheDocument();
+			await waitFor(() => expect(container.querySelector('.el-popper')).toBeVisible());
 		});
 
 		it('should not render tooltip when tooltip option is not provided', () => {
-			renderComponent({
+			const { container } = renderComponent({
 				props: {
 					visible: false,
 				},
@@ -52,7 +48,7 @@ describe('CanvasNodeTooltip', () => {
 				},
 			});
 
-			expect(queryTooltip()).not.toBeInTheDocument();
+			expect(container.querySelector('.el-popper')).not.toBeVisible();
 		});
 	});
 });

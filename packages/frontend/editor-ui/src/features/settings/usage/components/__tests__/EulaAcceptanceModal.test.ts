@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createComponentRenderer } from '@/__tests__/render';
 import EulaAcceptanceModal from '../EulaAcceptanceModal.vue';
-import { waitFor } from '@testing-library/vue';
 
 const renderComponent = createComponentRenderer(EulaAcceptanceModal);
 
@@ -15,19 +14,6 @@ describe('EulaAcceptanceModal', () => {
 		});
 
 		expect(await findByTestId('eula-acceptance-modal')).toBeInTheDocument();
-	});
-
-	it('should display the audit notice', async () => {
-		const { findByText } = renderComponent({
-			props: {
-				modelValue: true,
-				eulaUrl: 'https://example.com/eula.pdf',
-			},
-		});
-
-		expect(
-			await findByText('Your acceptance will be recorded for audit purposes.'),
-		).toBeInTheDocument();
 	});
 
 	it('should display the EULA link with correct URL', async () => {
@@ -66,7 +52,9 @@ describe('EulaAcceptanceModal', () => {
 			},
 		});
 
-		const checkbox = await findByTestId('eula-checkbox');
+		const checkbox = (await findByTestId('eula-checkbox')).querySelector(
+			'input[type="checkbox"]',
+		) as HTMLInputElement;
 		let acceptButton = await findByTestId('eula-accept-button');
 
 		expect(acceptButton).toBeDisabled();
@@ -86,7 +74,9 @@ describe('EulaAcceptanceModal', () => {
 			},
 		});
 
-		const checkbox = await findByTestId('eula-checkbox');
+		const checkbox = (await findByTestId('eula-checkbox')).querySelector(
+			'input[type="checkbox"]',
+		) as HTMLInputElement;
 		checkbox.click();
 
 		const acceptButton = await findByTestId('eula-accept-button');
@@ -119,19 +109,20 @@ describe('EulaAcceptanceModal', () => {
 			},
 		});
 
-		let checkbox = await findByTestId('eula-checkbox');
-		expect(checkbox.getAttribute('data-state')).toBe('unchecked');
-
+		let checkbox = (await findByTestId('eula-checkbox')).querySelector(
+			'input[type="checkbox"]',
+		) as HTMLInputElement;
 		checkbox.click();
-		await waitFor(() => {
-			expect(checkbox.getAttribute('data-state')).toBe('checked');
-		});
+
+		expect(checkbox.checked).toBe(true);
 
 		const cancelButton = await findByTestId('eula-cancel-button');
 		cancelButton.click();
 
 		// Wait for reactivity
-		checkbox = await findByTestId('eula-checkbox');
-		expect(checkbox.getAttribute('data-state')).toBe('unchecked');
+		checkbox = (await findByTestId('eula-checkbox')).querySelector(
+			'input[type="checkbox"]',
+		) as HTMLInputElement;
+		expect(checkbox.checked).toBe(false);
 	});
 });

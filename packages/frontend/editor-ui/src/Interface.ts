@@ -8,7 +8,7 @@ import type {
 import type { ILogInStatus } from '@/features/settings/users/users.types';
 import type { IUsedCredential } from '@/features/credentials/credentials.types';
 import type { Scope } from '@n8n/permissions';
-import type { NodeCreatorTag, BinaryMetadata } from '@n8n/design-system';
+import type { NodeCreatorTag } from '@n8n/design-system';
 import type {
 	GenericValue,
 	IConnections,
@@ -26,7 +26,6 @@ import type {
 	FeatureFlags,
 	ITelemetryTrackProperties,
 	WorkflowSettings,
-	WorkflowSettingsBinaryMode,
 	INodeExecutionData,
 	NodeConnectionType,
 	StartNodeData,
@@ -34,7 +33,6 @@ import type {
 	ISourceData,
 	PublicInstalledPackage,
 	IDestinationNode,
-	AgentRequestQuery,
 } from 'n8n-workflow';
 import type { Version } from '@n8n/rest-api-client/api/versions';
 import type { Cloud, InstanceUsage } from '@n8n/rest-api-client/api/cloudPlans';
@@ -53,7 +51,6 @@ import type {
 	AI_OTHERS_NODE_CREATOR_VIEW,
 	AI_UNCATEGORIZED_CATEGORY,
 	AI_EVALUATION,
-	HUMAN_IN_THE_LOOP_CATEGORY,
 } from '@/app/constants';
 import type { CREDENTIAL_EDIT_MODAL_KEY } from '@/features/credentials/credentials.constants';
 import type { BulkCommand, Undoable } from '@/app/models/history';
@@ -196,7 +193,7 @@ export interface IStartRunData {
 		data?: ITaskData;
 	};
 	agentRequest?: {
-		query: AgentRequestQuery;
+		query: NodeParameterValueType;
 		tool: {
 			name: NodeParameterValueType;
 		};
@@ -293,7 +290,6 @@ export type WorkflowResource = BaseResource & {
 	readOnly: boolean;
 	parentFolder?: ResourceParentFolder;
 	settings?: Partial<IWorkflowSettings>;
-	hasResolvableCredentials?: boolean;
 };
 
 export type VariableResource = BaseResource & {
@@ -314,7 +310,6 @@ export type CredentialsResource = BaseResource & {
 	readOnly: boolean;
 	needsSetup: boolean;
 	isGlobal?: boolean;
-	isResolvable?: boolean;
 };
 
 // Base resource types that are always available
@@ -349,7 +344,6 @@ export type WorkflowListItem = Omit<
 > & {
 	resource: 'workflow';
 	description?: string;
-	hasResolvableCredentials?: boolean;
 };
 
 export type WorkflowListResource = WorkflowListItem | FolderListItem;
@@ -427,7 +421,6 @@ export interface IWorkflowSettings extends IWorkflowSettingsWorkflow {
 	callerIds?: string;
 	callerPolicy?: WorkflowSettings.CallerPolicy;
 	executionOrder: NonNullable<IWorkflowSettingsWorkflow['executionOrder']>;
-	binaryMode?: WorkflowSettingsBinaryMode;
 	availableInMCP?: boolean;
 }
 
@@ -436,6 +429,14 @@ export interface ITimeoutHMS {
 	minutes: number;
 	seconds: number;
 }
+
+export type WorkflowTitleStatus =
+	| 'EXECUTING'
+	| 'IDLE'
+	| 'ERROR'
+	| 'DEBUG'
+	| 'AI_BUILDING'
+	| 'AI_DONE';
 
 export type ExtractActionKeys<T> = T extends SimplifiedNodeType ? T['name'] : never;
 
@@ -472,10 +473,6 @@ export interface SubcategoryItemProps {
 	defaults?: INodeParameters;
 	forceIncludeNodes?: string[];
 	sections?: string[];
-	items?: INodeCreateElement[];
-	new?: boolean;
-	hideActions?: boolean;
-	actionsFilter?: (items: ActionTypeDescription[]) => ActionTypeDescription[];
 }
 export interface ViewItemProps {
 	title: string;
@@ -551,10 +548,6 @@ export interface SectionCreateElement extends CreateElementBase {
 	type: 'section';
 	title: string;
 	children: INodeCreateElement[];
-	/**
-	 * Whether to show a separator at the bottom of the expanded section
-	 */
-	showSeparator?: boolean;
 }
 
 export interface ViewCreateElement extends CreateElementBase {
@@ -668,8 +661,7 @@ export type NodeFilterType =
 	| typeof AI_NODE_CREATOR_VIEW
 	| typeof AI_OTHERS_NODE_CREATOR_VIEW
 	| typeof AI_UNCATEGORIZED_CATEGORY
-	| typeof AI_EVALUATION
-	| typeof HUMAN_IN_THE_LOOP_CATEGORY;
+	| typeof AI_EVALUATION;
 
 export type NodeCreatorOpenSource =
 	| ''
@@ -818,16 +810,9 @@ export type SchemaType =
 	| 'object'
 	| 'function'
 	| 'null'
-	| 'undefined'
-	| 'binary';
+	| 'undefined';
 
-export type Schema = {
-	type: SchemaType;
-	key?: string;
-	value: string | Schema[];
-	path: string;
-	binaryData?: BinaryMetadata;
-};
+export type Schema = { type: SchemaType; key?: string; value: string | Schema[]; path: string };
 
 export type NodeAuthenticationOption = {
 	name: string;
@@ -871,8 +856,7 @@ export type CloudUpdateLinkSourceType =
 	| 'ai-builder-sidebar'
 	| 'ai-builder-canvas'
 	| 'custom-roles'
-	| 'main-sidebar'
-	| 'chat-hub';
+	| 'main-sidebar';
 
 export type UTMCampaign =
 	| 'upgrade-custom-data-filter'

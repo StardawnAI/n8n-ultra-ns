@@ -5,12 +5,6 @@ import { z } from 'zod';
 
 import { MAX_NODE_EXAMPLE_CHARS } from '@/constants';
 import type { NodeConfigurationEntry } from '@/types';
-import {
-	extractResourceOperations,
-	formatResourceOperationsForPrompt,
-	createResourceCacheKey,
-	type ResourceOperationInfo,
-} from '@/utils/resource-operation-extractor';
 import type { BuilderToolBase } from '@/utils/stream-processor';
 
 import { ValidationError, ToolExecutionError } from '../errors';
@@ -92,7 +86,6 @@ function formatNodeDetails(
 	withParameters: boolean = false,
 	withConnections: boolean = true,
 	examples: NodeConfigurationEntry[] = [],
-	resourceOperationInfo?: ResourceOperationInfo | null,
 ): string {
 	const parts: string[] = [];
 
@@ -104,11 +97,6 @@ function formatNodeDetails(
 
 	if (details.subtitle) {
 		parts.push(`<subtitle>${details.subtitle}</subtitle>`);
-	}
-
-	// Resource/Operation info (for nodes that follow this pattern)
-	if (resourceOperationInfo) {
-		parts.push(formatResourceOperationsForPrompt(resourceOperationInfo));
 	}
 
 	// Parameters
@@ -278,9 +266,6 @@ export function createNodeDetailsTool(nodeTypes: INodeTypeDescription[], logger?
 				// Extract node details
 				const details = extractNodeDetails(nodeType);
 
-				// Extract resource/operation info for nodes that follow this pattern
-				const resourceOperationInfo = extractResourceOperations(nodeType, nodeVersion, logger);
-
 				// Get example configurations (from cache or fetch from templates)
 				const { examples, newTemplates } = await getNodeExamples(
 					nodeName,
@@ -289,14 +274,8 @@ export function createNodeDetailsTool(nodeTypes: INodeTypeDescription[], logger?
 					(msg) => reportProgress(reporter, msg),
 				);
 
-				// Format the output message with examples and resource/operation info
-				const message = formatNodeDetails(
-					details,
-					withParameters,
-					withConnections,
-					examples,
-					resourceOperationInfo,
-				);
+				// Format the output message with examples
+				const message = formatNodeDetails(details, withParameters, withConnections, examples);
 
 				// Report completion
 				const output: NodeDetailsOutput = {
@@ -306,17 +285,8 @@ export function createNodeDetailsTool(nodeTypes: INodeTypeDescription[], logger?
 				};
 				reporter.complete(output);
 
-				// Build state updates: cache resource operation info and new templates
-				const cacheKey = createResourceCacheKey(nodeName, nodeVersion);
-				const stateUpdates: Record<string, unknown> = {
-					// Cache the resource operation info (including null for nodes without resources)
-					resourceOperationCache: { [cacheKey]: resourceOperationInfo },
-				};
-
-				// Add new templates if fetched
-				if (newTemplates) {
-					stateUpdates.cachedTemplates = newTemplates;
-				}
+				// Return success response with state updates if we fetched new templates
+				const stateUpdates = newTemplates ? { cachedTemplates: newTemplates } : undefined;
 
 				return createSuccessResponse(config, message, stateUpdates);
 			} catch (error) {

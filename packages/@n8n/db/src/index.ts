@@ -41,4 +41,3 @@ export { AuthRolesService } from './services/auth.roles.service';
 
 export { In, Like, Not, DataSource } from '@n8n/typeorm';
 export type { FindOptionsWhere } from '@n8n/typeorm';
-export type { EntityManager } from '@n8n/typeorm';

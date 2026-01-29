@@ -3,7 +3,6 @@ import { useI18n } from '@n8n/i18n';
 import { computed } from 'vue';
 
 import { N8nRadioButtons } from '@n8n/design-system';
-
 defineProps<{
 	isBuildMode: boolean;
 }>();
@@ -26,7 +25,7 @@ function toggle(value: boolean) {
 
 <template>
 	<N8nRadioButtons
-		size="small-medium"
+		size="small"
 		:model-value="isBuildMode"
 		:options="options"
 		@update:model-value="toggle"

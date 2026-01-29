@@ -11,8 +11,6 @@ import {
 	type ProjectRelationRepository,
 	type ProjectRepository,
 	type SharedWorkflowRepository,
-	type TagRepository,
-	type WorkflowTagMappingRepository,
 	User,
 	WorkflowEntity,
 	type WorkflowRepository,
@@ -53,8 +51,6 @@ describe('SourceControlImportService', () => {
 	const projectRepository = mock<ProjectRepository>();
 	const projectRelationRepository = mock<ProjectRelationRepository>();
 	const sharedWorkflowRepository = mock<SharedWorkflowRepository>();
-	const tagRepository = mock<TagRepository>();
-	const workflowTagMappingRepository = mock<WorkflowTagMappingRepository>();
 	const mockLogger = mock<Logger>();
 	const sourceControlScopedService = mock<SourceControlScopedService>();
 	const variableService = mock<VariablesService>();
@@ -68,13 +64,13 @@ describe('SourceControlImportService', () => {
 		mock(),
 		projectRepository,
 		projectRelationRepository,
-		tagRepository,
+		mock(),
 		sharedWorkflowRepository,
 		mock(),
 		mock(),
 		variablesRepository,
 		workflowRepository,
-		workflowTagMappingRepository,
+		mock(),
 		mock(),
 		mock(),
 		mock(),

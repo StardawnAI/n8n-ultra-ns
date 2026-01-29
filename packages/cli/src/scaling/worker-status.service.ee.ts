@@ -20,39 +20,29 @@ export class WorkerStatusService {
 		private readonly push: Push,
 	) {}
 
-	async requestWorkerStatus(requestingUserId: string) {
+	async requestWorkerStatus() {
 		if (this.instanceSettings.instanceType !== 'main') return;
 
-		return await this.publisher.publishCommand({
-			command: 'get-worker-status',
-			payload: { requestingUserId },
-		});
+		return await this.publisher.publishCommand({ command: 'get-worker-status' });
 	}
 
 	@OnPubSubEvent('response-to-get-worker-status', { instanceType: 'main' })
-	handleWorkerStatusResponse(payload: WorkerStatus & { requestingUserId: string }) {
-		// Send only to the user who requested worker status
-		this.push.sendToUsers(
-			{
-				type: 'sendWorkerStatusMessage',
-				data: {
-					workerId: payload.senderId,
-					status: payload,
-				},
+	handleWorkerStatusResponse(payload: WorkerStatus) {
+		this.push.broadcast({
+			type: 'sendWorkerStatusMessage',
+			data: {
+				workerId: payload.senderId,
+				status: payload,
 			},
-			[payload.requestingUserId],
-		);
+		});
 	}
 
 	@OnPubSubEvent('get-worker-status', { instanceType: 'worker' })
-	async publishWorkerResponse(command: { requestingUserId: string }) {
+	async publishWorkerResponse() {
 		await this.publisher.publishWorkerResponse({
 			senderId: this.instanceSettings.hostId,
 			response: 'response-to-get-worker-status',
-			payload: {
-				...this.generateStatus(),
-				requestingUserId: command.requestingUserId,
-			},
+			payload: this.generateStatus(),
 		});
 	}
 

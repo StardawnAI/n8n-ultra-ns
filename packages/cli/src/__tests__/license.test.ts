@@ -101,24 +101,17 @@ describe('License', () => {
 		);
 	});
 
-	test('attempts to activate license with provided key (initial activation)', async () => {
+	test('attempts to activate license with provided key', async () => {
 		await license.activate(MOCK_ACTIVATION_KEY);
 
-		expect(LicenseManager.prototype.activate).toHaveBeenCalledWith(MOCK_ACTIVATION_KEY, {
-			eulaUri: undefined,
-			email: undefined,
-		});
+		expect(LicenseManager.prototype.activate).toHaveBeenCalledWith(MOCK_ACTIVATION_KEY, undefined);
 	});
 
-	test('attempts to activate license with eulaUri and userEmail (EULA acceptance)', async () => {
+	test('attempts to activate license with eulaUri', async () => {
 		const eulaUri = 'https://n8n.io/legal/eula/';
-		const userEmail = 'user@example.com';
-		await license.activate(MOCK_ACTIVATION_KEY, eulaUri, userEmail);
+		await license.activate(MOCK_ACTIVATION_KEY, eulaUri);
 
-		expect(LicenseManager.prototype.activate).toHaveBeenCalledWith(MOCK_ACTIVATION_KEY, {
-			eulaUri,
-			email: userEmail,
-		});
+		expect(LicenseManager.prototype.activate).toHaveBeenCalledWith(MOCK_ACTIVATION_KEY, eulaUri);
 	});
 
 	test('renews license', async () => {

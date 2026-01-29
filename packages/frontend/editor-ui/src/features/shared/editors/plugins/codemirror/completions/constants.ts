@@ -382,15 +382,6 @@ export const ROOT_DOLLAR_COMPLETIONS: Completion[] = [
 			description: i18n.baseText('codeNodeEditor.completer.$nodeVersion'),
 		}),
 	},
-	{
-		label: '$tool',
-		section: METADATA_SECTION,
-		info: createInfoBoxRenderer({
-			name: '$tool',
-			returnType: 'Object',
-			description: i18n.baseText('codeNodeEditor.completer.$tool'),
-		}),
-	},
 ];
 
 export const STRING_RECOMMENDED_OPTIONS = [

@@ -1,8 +1,6 @@
 <script lang="ts" setup generic="Value extends unknown = unknown">
 import { computed, getCurrentInstance, useCssModule } from 'vue';
 
-import { isBinary, type BinaryMetadata } from '../../types/binary';
-
 interface TreeProps {
 	value?: Record<string, Value>;
 	path?: Array<string | number>;
@@ -13,7 +11,6 @@ interface TreeProps {
 defineSlots<{
 	label(props: { label: string; path: Array<string | number> }): never;
 	value(props: { value: Value }): never;
-	binary(props: { value: BinaryMetadata; path: Array<string | number>; depth?: number }): never;
 }>();
 
 defineOptions({ name: 'N8nTree' });
@@ -62,10 +59,7 @@ const N8nTree = getCurrentInstance()?.type;
 
 <template>
 	<div v-if="isObject(value)" class="n8n-tree">
-		<div v-if="isBinary(value)">
-			<slot name="binary" :value="value" :path="path" />
-		</div>
-		<div v-else v-for="(label, i) in Object.keys(value)" :key="i" :class="classes">
+		<div v-for="(label, i) in Object.keys(value)" :key="i" :class="classes">
 			<div v-if="isSimple(value[label])" :class="$style.simple">
 				<slot v-if="!!$slots.label" name="label" :label="label" :path="getPath(label)" />
 				<span v-else>{{ label }}</span>
@@ -76,7 +70,6 @@ const N8nTree = getCurrentInstance()?.type;
 			<div v-else>
 				<slot v-if="!!$slots.label" name="label" :label="label" :path="getPath(label)" />
 				<span v-else>{{ label }}</span>
-
 				<N8nTree
 					v-if="isObject(value[label])"
 					:path="getPath(label)"
@@ -86,10 +79,6 @@ const N8nTree = getCurrentInstance()?.type;
 				>
 					<template v-if="!!$slots.label" #label="data">
 						<slot name="label" v-bind="data" />
-					</template>
-
-					<template v-if="!!$slots.binary" #binary="data">
-						<slot name="binary" v-bind="data" :depth="depth + 1" />
 					</template>
 
 					<template v-if="!!$slots.value" #value="data">

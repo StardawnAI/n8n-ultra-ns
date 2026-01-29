@@ -1,6 +1,5 @@
 import type { ApiKeyWithRawValue } from '@n8n/api-types';
 import { testDb, randomValidPassword, mockInstance } from '@n8n/backend-test-utils';
-import { LICENSE_FEATURES } from '@n8n/constants';
 import { GlobalConfig } from '@n8n/config';
 import type { User } from '@n8n/db';
 import { ApiKeyRepository, GLOBAL_MEMBER_ROLE, GLOBAL_OWNER_ROLE } from '@n8n/db';
@@ -10,31 +9,26 @@ import {
 	getOwnerOnlyApiKeyScopes,
 	type ApiKeyScope,
 } from '@n8n/permissions';
-import { License } from '@/license';
+import { mock } from 'jest-mock-extended';
+
+import type { License } from '@/license';
 import { PublicApiKeyService } from '@/services/public-api-key.service';
 
 import { createOwnerWithApiKey, createUser, createUserShell } from './shared/db/users';
 import type { SuperAgentTest } from './shared/types';
 import * as utils from './shared/utils/';
-import { LicenseMocker } from './shared/license';
 
 const testServer = utils.setupTestServer({ endpointGroups: ['apiKeys'] });
 let publicApiKeyService: PublicApiKeyService;
-let licenseMocker: LicenseMocker;
+const license = mock<License>();
 
 beforeAll(() => {
 	publicApiKeyService = Container.get(PublicApiKeyService);
-
-	licenseMocker = new LicenseMocker();
-	licenseMocker.mock(Container.get(License));
-	licenseMocker.enable(LICENSE_FEATURES.API_KEY_SCOPES);
 });
 
 beforeEach(async () => {
 	await testDb.truncate(['User']);
 	mockInstance(GlobalConfig, { publicApi: { disabled: false } });
-	licenseMocker.reset();
-	licenseMocker.enable(LICENSE_FEATURES.API_KEY_SCOPES);
 });
 
 describe('When public API is disabled', () => {
@@ -397,6 +391,7 @@ describe('Member', () => {
 
 	test("POST /api-keys should create an api key with scopes allowed in the user's role", async () => {
 		const expiresAt = Date.now() + 1000;
+		license.isApiKeyScopesEnabled.mockReturnValue(true);
 
 		const newApiKeyResponse = await testServer
 			.authAgentFor(member)
@@ -429,6 +424,7 @@ describe('Member', () => {
 
 	test("POST /api-keys should fail to create api key with scopes not allowed in the user's role", async () => {
 		const expiresAt = Date.now() + 1000;
+		license.isApiKeyScopesEnabled.mockReturnValue(true);
 
 		const notAllowedScope = getOwnerOnlyApiKeyScopes()[0];
 

@@ -115,7 +115,7 @@ export class ScheduledTaskManager {
 
 		for (const cron of workflowCrons.values()) {
 			summaries.push(cron.summary);
-			void cron.job.stop();
+			cron.job.stop();
 		}
 
 		this.cronsByWorkflow.delete(workflowId);

@@ -1,10 +1,8 @@
 import type { GlobalConfig } from '@n8n/config';
-import type { InstanceSettings } from 'n8n-core';
 import { promises as fs } from 'fs';
 import path from 'path';
 
 import { DataTableFileCleanupService } from '../data-table-file-cleanup.service';
-import { mock } from 'jest-mock-extended';
 
 jest.mock('fs', () => ({
 	promises: {
@@ -25,9 +23,7 @@ describe('DataTableFileCleanupService', () => {
 		},
 	} as GlobalConfig;
 
-	const instanceSettings = mock<InstanceSettings>({ instanceType: 'main' });
-
-	const service = new DataTableFileCleanupService(globalConfig, instanceSettings);
+	const service = new DataTableFileCleanupService(globalConfig);
 
 	beforeEach(() => {
 		jest.clearAllMocks();
@@ -81,25 +77,12 @@ describe('DataTableFileCleanupService', () => {
 	});
 
 	describe('start and shutdown', () => {
-		it('should start cleanup interval on main', async () => {
+		it('should start cleanup interval', async () => {
 			jest.useFakeTimers();
 
 			await service.start();
 
 			expect(service['cleanupInterval']).toBeDefined();
-
-			jest.useRealTimers();
-		});
-
-		it('should skip cleanup interval on worker', async () => {
-			jest.useFakeTimers();
-
-			const workerSettings = mock<InstanceSettings>({ instanceType: 'worker' });
-			const workerService = new DataTableFileCleanupService(globalConfig, workerSettings);
-
-			await workerService.start();
-
-			expect(workerService['cleanupInterval']).toBeUndefined();
 
 			jest.useRealTimers();
 		});

@@ -5,7 +5,7 @@ import {
 	type ChatHubSessionDto,
 	type ChatHubConversationDto,
 	type ChatSessionId,
-	type MessageChunk,
+	type EnrichedStructuredChunk,
 	type ChatHubProvider,
 	chatHubConversationModelSchema,
 	type ChatModelDto,
@@ -83,7 +83,7 @@ export interface ChatAgentFilter {
 	search: string;
 }
 
-export interface ChatStreamingState extends Partial<MessageChunk['metadata']> {
+export interface ChatStreamingState extends Partial<EnrichedStructuredChunk['metadata']> {
 	promptPreviousMessageId: ChatMessageId | null;
 	promptText: string;
 	promptId: ChatMessageId;

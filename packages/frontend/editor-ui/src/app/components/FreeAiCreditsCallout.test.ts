@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { fireEvent, screen, waitFor } from '@testing-library/vue';
+import { fireEvent, screen } from '@testing-library/vue';
 import FreeAiCreditsCallout from '@/app/components/FreeAiCreditsCallout.vue';
 import { useCredentialsStore } from '@/features/credentials/credentials.store';
 import { useSettingsStore } from '@/app/stores/settings.store';
@@ -130,12 +130,8 @@ describe('FreeAiCreditsCallout', () => {
 		await fireEvent.click(claimButton);
 
 		expect(credentialsStore.claimFreeAiCredits).toHaveBeenCalledWith('test-project-id');
-		expect(useTelemetry().track).toHaveBeenCalledWith('User claimed OpenAI credits', {
-			source: 'freeAiCreditsCallout',
-		});
-		await waitFor(() => {
-			assertUserClaimedCredits();
-		});
+		expect(useTelemetry().track).toHaveBeenCalledWith('User claimed OpenAI credits');
+		assertUserClaimedCredits();
 	});
 
 	it('should not be able to claim credits is user already claimed credits', async () => {

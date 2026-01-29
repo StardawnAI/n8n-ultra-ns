@@ -26,27 +26,12 @@ export const createSchemaBuilder = (tablePrefix: string, queryRunner: QueryRunne
 	dropColumns: (tableName: string, columnNames: string[]) =>
 		new DropColumns(tableName, columnNames, tablePrefix, queryRunner),
 
-	/**
-	 * Creates an index on the given table and column names.
-	 *
-	 * @param whereClause - The where clause to apply to the index to create a partial index.
-	 */
 	createIndex: (
 		tableName: string,
 		columnNames: string[],
 		isUnique = false,
 		customIndexName?: string,
-		whereClause?: string,
-	) =>
-		new CreateIndex(
-			tableName,
-			columnNames,
-			isUnique,
-			tablePrefix,
-			queryRunner,
-			customIndexName,
-			whereClause,
-		),
+	) => new CreateIndex(tableName, columnNames, isUnique, tablePrefix, queryRunner, customIndexName),
 
 	dropIndex: (
 		tableName: string,

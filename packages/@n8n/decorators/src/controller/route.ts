@@ -2,8 +2,7 @@ import { Container } from '@n8n/di';
 import type { RequestHandler } from 'express';
 
 import { ControllerRegistryMetadata } from './controller-registry-metadata';
-import type { KeyedRateLimiterConfig, RateLimiterLimits } from './rate-limit';
-import type { Controller, CorsOptions, Method } from './types';
+import type { Controller, Method, RateLimit } from './types';
 
 interface RouteOptions {
 	middlewares?: RequestHandler[];
@@ -13,14 +12,10 @@ interface RouteOptions {
 	allowSkipPreviewAuth?: boolean;
 	/** When this flag is set to true, the auth cookie does not enforce MFA to be used in the token */
 	allowSkipMFA?: boolean;
-	/** When these options are set, calls to this endpoint are rate limited based on IP address */
-	ipRateLimit?: boolean | RateLimiterLimits;
-	/** When these options are set, calls to this endpoint are rate limited based on a key extracted from the request */
-	keyedRateLimit?: KeyedRateLimiterConfig;
+	/** When these options are set, calls to this endpoint are rate limited using the options */
+	rateLimit?: boolean | RateLimit;
 	/** When this flag is set to true, the endpoint is protected by API key */
 	apiKeyAuth?: boolean;
-	/** CORS options for the route, this does not handle preflight requests */
-	cors?: Partial<CorsOptions> | true;
 }
 
 const RouteFactory =
@@ -39,9 +34,7 @@ const RouteFactory =
 		routeMetadata.allowSkipPreviewAuth = options.allowSkipPreviewAuth ?? false;
 		routeMetadata.allowSkipMFA = options.allowSkipMFA ?? false;
 		routeMetadata.apiKeyAuth = options.apiKeyAuth ?? false;
-		routeMetadata.ipRateLimit = options.ipRateLimit;
-		routeMetadata.keyedRateLimit = options.keyedRateLimit;
-		routeMetadata.cors = options.cors;
+		routeMetadata.rateLimit = options.rateLimit;
 	};
 
 export const Get = RouteFactory('get');

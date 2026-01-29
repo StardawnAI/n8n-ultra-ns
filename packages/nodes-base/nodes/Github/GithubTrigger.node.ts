@@ -1,4 +1,3 @@
-import { randomBytes } from 'crypto';
 import type {
 	IHookFunctions,
 	IWebhookFunctions,
@@ -11,7 +10,6 @@ import type {
 import { NodeConnectionTypes, NodeApiError, NodeOperationError } from 'n8n-workflow';
 
 import { githubApiRequest } from './GenericFunctions';
-import { verifySignature } from './GithubTriggerHelpers';
 import { getRepositories, getUsers } from './SearchFunctions';
 
 export class GithubTrigger implements INodeType {
@@ -509,16 +507,12 @@ export class GithubTrigger implements INodeType {
 				const endpoint = `/repos/${owner}/${repository}/hooks`;
 				const options = this.getNodeParameter('options') as { insecureSSL: boolean };
 
-				// Generate a secure random secret for webhook signature verification
-				const webhookSecret = randomBytes(32).toString('hex');
-
 				const body = {
 					name: 'web',
 					config: {
 						url: webhookUrl,
 						content_type: 'json',
 						insecure_ssl: options.insecureSSL ? '1' : '0',
-						secret: webhookSecret,
 					},
 					events,
 					active: true,
@@ -544,8 +538,6 @@ export class GithubTrigger implements INodeType {
 									// create it again simply save the webhook-id
 									webhookData.webhookId = webhook.id as string;
 									webhookData.webhookEvents = webhook.events as string[];
-									// Legacy webhook without secret on GitHub's side - not setting webhookData.webhookSecret
-									// so signature verification is skipped. To enable it, deactivate and reactivate the workflow.
 									return true;
 								}
 							}
@@ -578,7 +570,6 @@ export class GithubTrigger implements INodeType {
 
 				webhookData.webhookId = responseData.id as string;
 				webhookData.webhookEvents = responseData.events as string[];
-				webhookData.webhookSecret = webhookSecret;
 
 				return true;
 			},
@@ -603,7 +594,6 @@ export class GithubTrigger implements INodeType {
 					// that no webhooks are registered anymore
 					delete webhookData.webhookId;
 					delete webhookData.webhookEvents;
-					delete webhookData.webhookSecret;
 				}
 
 				return true;
@@ -619,19 +609,9 @@ export class GithubTrigger implements INodeType {
 	};
 
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
-		// Verify the webhook signature before processing
-		if (!verifySignature.call(this)) {
-			const res = this.getResponseObject();
-			res.status(401).send('Unauthorized').end();
-
-			return {
-				noWebhookResponse: true,
-			};
-		}
-
 		const bodyData = this.getBodyData();
 
-		// Check if the webhook is only the ping from Github to confirm if it works
+		// Check if the webhook is only the ping from Github to confirm if it workshook_id
 		if (bodyData.hook_id !== undefined && bodyData.action === undefined) {
 			// Is only the ping and not an actual webhook call. So return 'OK'
 			// but do not start the workflow.

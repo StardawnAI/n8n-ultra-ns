@@ -65,22 +65,9 @@ export class ExecuteSingleContext extends BaseExecuteContext implements IExecute
 			...getBinaryHelperFunctions(additionalData, workflow.id),
 
 			assertBinaryData: (propertyName, inputIndex = 0) =>
-				assertBinaryData(
-					inputData,
-					node,
-					itemIndex,
-					propertyName,
-					inputIndex,
-					workflow.settings.binaryMode,
-				),
+				assertBinaryData(inputData, node, itemIndex, propertyName, inputIndex),
 			getBinaryDataBuffer: async (propertyName, inputIndex = 0) =>
-				await getBinaryDataBuffer(
-					inputData,
-					itemIndex,
-					propertyName,
-					inputIndex,
-					workflow.settings.binaryMode,
-				),
+				await getBinaryDataBuffer(inputData, itemIndex, propertyName, inputIndex),
 			detectBinaryEncoding: (buffer) => detectBinaryEncoding(buffer),
 		};
 	}

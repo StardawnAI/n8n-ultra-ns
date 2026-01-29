@@ -6,7 +6,6 @@ import type {
 	INode,
 	INodeExecutionData,
 	IWebhookFunctions,
-	IWorkflowSettings,
 	NodeTypeAndVersion,
 } from 'n8n-workflow';
 
@@ -27,9 +26,6 @@ describe('Form Node', () => {
 		form = new Form();
 		mockExecuteFunctions = mock<IExecuteFunctions>();
 		mockWebhookFunctions = mock<IWebhookFunctions>();
-
-		mockExecuteFunctions.getWorkflowSettings.mockReturnValue(mock<IWorkflowSettings>({}));
-		mockWebhookFunctions.getWorkflowSettings.mockReturnValue(mock<IWorkflowSettings>({}));
 	});
 
 	describe('execute method', () => {

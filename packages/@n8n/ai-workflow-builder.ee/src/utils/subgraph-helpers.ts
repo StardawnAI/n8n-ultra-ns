@@ -12,7 +12,6 @@ interface CommandUpdate {
 	workflowOperations?: WorkflowOperation[];
 	templateIds?: number[];
 	cachedTemplates?: WorkflowMetadata[];
-	bestPractices?: string;
 }
 
 /**
@@ -47,14 +46,6 @@ function isCommandUpdate(value: unknown): value is CommandUpdate {
 	) {
 		return false;
 	}
-	// bestPractices is optional, but if present must be a string
-	if (
-		'bestPractices' in obj &&
-		obj.bestPractices !== undefined &&
-		typeof obj.bestPractices !== 'string'
-	) {
-		return false;
-	}
 	return true;
 }
 
@@ -76,7 +67,6 @@ export async function executeSubgraphTools(
 	workflowOperations?: WorkflowOperation[] | null;
 	templateIds?: number[];
 	cachedTemplates?: WorkflowMetadata[];
-	bestPractices?: string;
 }> {
 	const lastMessage = state.messages[state.messages.length - 1];
 
@@ -115,12 +105,11 @@ export async function executeSubgraphTools(
 		}),
 	);
 
-	// Unwrap Command objects and collect messages/operations/templateIds/cachedTemplates/bestPractices
+	// Unwrap Command objects and collect messages/operations/templateIds/cachedTemplates
 	const messages: BaseMessage[] = [];
 	const operations: WorkflowOperation[] = [];
 	const templateIds: number[] = [];
 	const cachedTemplates: WorkflowMetadata[] = [];
-	let bestPractices: string | undefined;
 
 	for (const result of toolResults) {
 		if (isCommand(result)) {
@@ -138,9 +127,6 @@ export async function executeSubgraphTools(
 				if (result.update.cachedTemplates) {
 					cachedTemplates.push(...result.update.cachedTemplates);
 				}
-				if (result.update.bestPractices) {
-					bestPractices = result.update.bestPractices;
-				}
 			}
 		} else if (isBaseMessage(result)) {
 			// Direct message (ToolMessage, AIMessage, etc.)
@@ -153,7 +139,6 @@ export async function executeSubgraphTools(
 		workflowOperations?: WorkflowOperation[] | null;
 		templateIds?: number[];
 		cachedTemplates?: WorkflowMetadata[];
-		bestPractices?: string;
 	} = {};
 
 	if (messages.length > 0) {
@@ -170,10 +155,6 @@ export async function executeSubgraphTools(
 
 	if (cachedTemplates.length > 0) {
 		stateUpdate.cachedTemplates = cachedTemplates;
-	}
-
-	if (bestPractices) {
-		stateUpdate.bestPractices = bestPractices;
 	}
 
 	return stateUpdate;

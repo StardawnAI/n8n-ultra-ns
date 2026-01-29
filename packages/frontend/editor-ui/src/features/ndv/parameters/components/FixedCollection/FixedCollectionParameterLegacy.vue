@@ -79,7 +79,6 @@ const getPropertyPath = (name: string, index?: number): string => {
 };
 
 const multipleValues = computed(() => !!props.parameter.typeOptions?.multipleValues);
-const hideEmptyMessage = computed(() => !props.parameter.typeOptions?.hideEmptyMessage);
 const sortable = computed(() => !!props.parameter.typeOptions?.sortable);
 
 const getPlaceholderText = computed(() => {
@@ -430,7 +429,7 @@ function getItemKey(_item: INodeParameters, index: number) {
 		@keydown.stop
 	>
 		<div v-if="getProperties.length === 0" :class="$style.noItemsExist">
-			<N8nText v-if="hideEmptyMessage" size="small">{{
+			<N8nText size="small">{{
 				locale.baseText('fixedCollectionParameter.currentlyNoItemsExist')
 			}}</N8nText>
 		</div>

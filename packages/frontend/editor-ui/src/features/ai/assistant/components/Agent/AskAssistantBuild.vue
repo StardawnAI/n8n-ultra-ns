@@ -2,7 +2,6 @@
 import { useBuilderStore } from '../../builder.store';
 import { useUsersStore } from '@/features/settings/users/users.store';
 import { useWorkflowHistoryStore } from '@/features/workflows/workflowHistory/workflowHistory.store';
-import { useHistoryStore } from '@/app/stores/history.store';
 import { useCollaborationStore } from '@/features/collaboration/collaboration/collaboration.store';
 import { useWorkflowAutosaveStore } from '@/app/stores/workflowAutosave.store';
 import { AutoSaveState } from '@/app/constants';
@@ -15,17 +14,11 @@ import type { RatingFeedback, WorkflowSuggestion } from '@n8n/design-system/type
 import { isTaskAbortedMessage, isWorkflowUpdatedMessage } from '@n8n/design-system/types/assistant';
 import { nodeViewEventBus } from '@/app/event-bus';
 import ExecuteMessage from './ExecuteMessage.vue';
-import NotificationPermissionBanner from './NotificationPermissionBanner.vue';
 import { usePageRedirectionHelper } from '@/app/composables/usePageRedirectionHelper';
-import { useBrowserNotifications } from '@/app/composables/useBrowserNotifications';
 import { useToast } from '@/app/composables/useToast';
 import { useDocumentVisibility } from '@/app/composables/useDocumentVisibility';
 import { WORKFLOW_SUGGESTIONS } from '@/app/constants/workflowSuggestions';
 import { VIEWS } from '@/app/constants';
-import { useWorkflowUpdate } from '@/app/composables/useWorkflowUpdate';
-import { useErrorHandler } from '@/app/composables/useErrorHandler';
-import type { WorkflowDataUpdate } from '@n8n/rest-api-client/api/workflows';
-import { jsonParse } from 'n8n-workflow';
 import shuffle from 'lodash/shuffle';
 
 import { N8nAskAssistantChat, N8nText } from '@n8n/design-system';
@@ -37,7 +30,6 @@ const emit = defineEmits<{
 const builderStore = useBuilderStore();
 const usersStore = useUsersStore();
 const workflowHistoryStore = useWorkflowHistoryStore();
-const historyStore = useHistoryStore();
 const collaborationStore = useCollaborationStore();
 const workflowAutosaveStore = useWorkflowAutosaveStore();
 const telemetry = useTelemetry();
@@ -47,43 +39,16 @@ const i18n = useI18n();
 const route = useRoute();
 const { goToUpgrade } = usePageRedirectionHelper();
 const toast = useToast();
-const { updateWorkflow } = useWorkflowUpdate();
-const { handleError } = useErrorHandler({
-	source: 'ai-builder',
-	titleKey: 'aiAssistant.builder.error.title',
-});
 const { onDocumentVisible } = useDocumentVisibility();
-const { canPrompt } = useBrowserNotifications();
 
 onDocumentVisible(() => {
 	builderStore.clearDoneIndicatorTitle();
 });
 
-// Track processed workflow updates and accumulated node IDs for tidyUp
+// Track processed workflow updates
 const processedWorkflowUpdates = ref(new Set<string>());
-const accumulatedNodeIdsToTidyUp = ref<string[]>([]);
+const shouldTidyUp = ref(false);
 const n8nChatRef = ref<InstanceType<typeof N8nAskAssistantChat>>();
-
-const notificationsPermissionsBannerTriggered = ref(false);
-
-watch(
-	() => builderStore.streaming,
-	(isStreaming) => {
-		if (isStreaming && canPrompt.value) {
-			notificationsPermissionsBannerTriggered.value = true;
-		}
-	},
-);
-
-const shouldShowNotificationBanner = computed(() => {
-	return notificationsPermissionsBannerTriggered.value && canPrompt.value;
-});
-
-watch(shouldShowNotificationBanner, (isShown) => {
-	if (isShown) {
-		builderStore.trackWorkflowBuilderJourney('browser_notification_ask_permission');
-	}
-});
 
 const user = computed(() => ({
 	firstName: usersStore.currentUser?.firstName ?? '',
@@ -161,8 +126,8 @@ async function onUserMessage(content: string) {
 	// Record activity to maintain write lock while building
 	collaborationStore.requestWriteAccess();
 
-	// Reset accumulated node IDs for each new message exchange
-	accumulatedNodeIdsToTidyUp.value = [];
+	// Reset tidy up flag for each new message exchange
+	shouldTidyUp.value = false;
 
 	// If the workflow is empty, set the initial generation flag
 	const isInitialGeneration = workflowsStore.workflow.nodes.length === 0;
@@ -176,8 +141,7 @@ async function onUserMessage(content: string) {
 function onNewWorkflow() {
 	builderStore.resetBuilderChat();
 	processedWorkflowUpdates.value.clear();
-	accumulatedNodeIdsToTidyUp.value = [];
-	notificationsPermissionsBannerTriggered.value = false;
+	shouldTidyUp.value = false;
 }
 
 function onFeedback(feedback: RatingFeedback) {
@@ -193,7 +157,6 @@ function onFeedback(feedback: RatingFeedback) {
 			feedback: feedback.feedback,
 			workflow_id: workflowsStore.workflowId,
 			session_id: builderStore.trackingSessionId,
-			user_message_id: builderStore.lastUserMessageId,
 		});
 	}
 }
@@ -248,66 +211,38 @@ async function onWorkflowExecuted() {
 	});
 }
 
-function parseWorkflowJson(workflowJson: string): WorkflowDataUpdate | undefined {
-	try {
-		return jsonParse<WorkflowDataUpdate>(workflowJson);
-	} catch (error) {
-		handleError(error, {
-			context: 'workflow-json-parse',
-			title: i18n.baseText('aiAssistant.builder.workflowParsingError.title'),
-			message: i18n.baseText('aiAssistant.builder.workflowParsingError.content'),
-		});
-		return undefined;
-	}
-}
-
 // Watch for workflow updates and apply them
 watch(
 	() => builderStore.workflowMessages,
-	async (messages) => {
-		for (const msg of messages) {
-			if (!msg.id || processedWorkflowUpdates.value.has(msg.id)) continue;
-			if (!isWorkflowUpdatedMessage(msg)) continue;
+	(messages) => {
+		messages
+			.filter((msg) => {
+				return msg.id && !processedWorkflowUpdates.value.has(msg.id);
+			})
+			.forEach((msg) => {
+				if (msg.id && isWorkflowUpdatedMessage(msg)) {
+					processedWorkflowUpdates.value.add(msg.id);
 
-			processedWorkflowUpdates.value.add(msg.id);
+					const result = builderStore.applyWorkflowUpdate(msg.codeSnippet);
 
-			const workflowData = parseWorkflowJson(msg.codeSnippet);
-			if (!workflowData) continue;
+					if (result.success) {
+						// Only tidy up if new nodes are added per user message
+						const hasNewNodes = Boolean(result.newNodeIds && result.newNodeIds.length > 0);
+						shouldTidyUp.value = shouldTidyUp.value || hasNewNodes;
 
-			const result = await updateWorkflow(workflowData, {
-				isInitialGeneration: builderStore.initialGeneration,
-				nodeIdsToTidyUp: accumulatedNodeIdsToTidyUp.value,
+						// Import the updated workflow
+						nodeViewEventBus.emit('importWorkflowData', {
+							data: result.workflowData,
+							tidyUp: shouldTidyUp.value,
+							nodesIdsToTidyUp: result.newNodeIds,
+							regenerateIds: false,
+							trackEvents: false,
+						});
+					}
+				}
 			});
-
-			if (!result.success) {
-				handleError(result.error, { context: 'workflow-update' });
-				builderStore.abortStreaming();
-				return;
-			}
-
-			// Accumulate new node IDs so subsequent messages tidy up all new nodes
-			if (result.newNodeIds.length > 0) {
-				accumulatedNodeIdsToTidyUp.value = [
-					...accumulatedNodeIdsToTidyUp.value,
-					...result.newNodeIds,
-				];
-			}
-		}
 	},
 	{ deep: true },
-);
-
-// Manage undo recording based on streaming state - start when streaming begins, stop when it ends
-// This ensures all builder changes during a streaming session can be undone at once
-watch(
-	() => builderStore.streaming,
-	(isStreaming, wasStreaming) => {
-		if (isStreaming && !wasStreaming) {
-			historyStore.startRecordingUndo();
-		} else if (!isStreaming && wasStreaming) {
-			historyStore.stopRecordingUndo();
-		}
-	},
 );
 
 // Reset initial generation flag when streaming ends
@@ -412,11 +347,6 @@ defineExpose({
 			<template #header>
 				<slot name="header" />
 			</template>
-			<template #inputHeader>
-				<Transition name="slide">
-					<NotificationPermissionBanner v-if="shouldShowNotificationBanner" />
-				</Transition>
-			</template>
 			<template #messagesFooter>
 				<ExecuteMessage v-if="showExecuteMessage" @workflow-executed="onWorkflowExecuted" />
 			</template>
@@ -428,18 +358,6 @@ defineExpose({
 		</N8nAskAssistantChat>
 	</div>
 </template>
-
-<style lang="scss" scoped>
-.slide-enter-active,
-.slide-leave-active {
-	transition: transform var(--animation--duration) var(--animation--easing);
-}
-
-.slide-enter-from,
-.slide-leave-to {
-	transform: translateY(8px);
-}
-</style>
 
 <style lang="scss" module>
 .container {

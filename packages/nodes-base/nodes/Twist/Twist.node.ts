@@ -1,6 +1,5 @@
 import moment from 'moment-timezone';
 import type {
-	IBinaryData,
 	IDataObject,
 	IExecuteFunctions,
 	ILoadOptionsFunctions,
@@ -20,7 +19,6 @@ import {
 	messageConversationOperations,
 } from './MessageConversationDescription';
 import { threadFields, threadOperations } from './ThreadDescription';
-import { prepareBinariesDataList } from '../../utils/binary';
 
 export class Twist implements INodeType {
 	description: INodeTypeDescription = {
@@ -247,9 +245,7 @@ export class Twist implements INodeType {
 						}
 
 						if (body.binaryProperties) {
-							const binaryProperties = prepareBinariesDataList(
-								body.binaryProperties as string | string[] | IBinaryData | IBinaryData[],
-							);
+							const binaryProperties = (body.binaryProperties as string).split(',');
 
 							const attachments: IDataObject[] = [];
 
@@ -347,9 +343,7 @@ export class Twist implements INodeType {
 						}
 
 						if (body.binaryProperties) {
-							const binaryProperties = prepareBinariesDataList(
-								body.binaryProperties as string | string[] | IBinaryData | IBinaryData[],
-							);
+							const binaryProperties = (body.binaryProperties as string).split(',');
 
 							const attachments: IDataObject[] = [];
 
@@ -417,9 +411,7 @@ export class Twist implements INodeType {
 						}
 
 						if (body.binaryProperties) {
-							const binaryProperties = prepareBinariesDataList(
-								body.binaryProperties as string | string[] | IBinaryData | IBinaryData[],
-							);
+							const binaryProperties = (body.binaryProperties as string).split(',');
 
 							const attachments: IDataObject[] = [];
 
@@ -533,9 +525,7 @@ export class Twist implements INodeType {
 						}
 
 						if (body.binaryProperties) {
-							const binaryProperties = prepareBinariesDataList(
-								body.binaryProperties as string | string[] | IBinaryData | IBinaryData[],
-							);
+							const binaryProperties = (body.binaryProperties as string).split(',');
 
 							const attachments: IDataObject[] = [];
 
@@ -608,9 +598,7 @@ export class Twist implements INodeType {
 						}
 
 						if (body.binaryProperties) {
-							const binaryProperties = prepareBinariesDataList(
-								body.binaryProperties as string | string[] | IBinaryData | IBinaryData[],
-							);
+							const binaryProperties = (body.binaryProperties as string).split(',');
 
 							const attachments: IDataObject[] = [];
 
@@ -707,9 +695,7 @@ export class Twist implements INodeType {
 						}
 
 						if (body.binaryProperties) {
-							const binaryProperties = prepareBinariesDataList(
-								body.binaryProperties as string | string[] | IBinaryData | IBinaryData[],
-							);
+							const binaryProperties = (body.binaryProperties as string).split(',');
 
 							const attachments: IDataObject[] = [];
 

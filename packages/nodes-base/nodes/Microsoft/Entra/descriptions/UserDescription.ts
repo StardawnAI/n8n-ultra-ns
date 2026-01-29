@@ -252,8 +252,7 @@ const addGroupFields: INodeProperties[] = [
 				property: '@odata.id',
 				propertyInDotNotation: false,
 				type: 'body',
-				value:
-					'={{ ($credentials.graphApiBaseUrl || "https://graph.microsoft.com").replace(/\\/+$/, "") }}/v1.0/directoryObjects/{{ $value }}',
+				value: '=https://graph.microsoft.com/v1.0/directoryObjects/{{ $value }}',
 			},
 		},
 		type: 'resourceLocator',

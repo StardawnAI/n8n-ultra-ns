@@ -1,24 +1,18 @@
 {
-	"extends": ["./tsconfig.json", "@n8n/typescript-config/modern/tsconfig.cjs.json"],
+	"extends": ["./tsconfig.json", "@n8n/typescript-config/tsconfig.build.json"],
 	"compilerOptions": {
 		"outDir": "dist",
-		"module": "commonjs",
-		"declaration": true,
-		"tsBuildInfoFile": "dist/typecheck.tsbuildinfo"
+		"composite": true,
+		"tsBuildInfoFile": "dist/build.tsbuildinfo"
 	},
 	"include": [
 		"credentials/**/*.ts",
 		"credentials/translations/**/*.json",
 		"nodes/**/*.ts",
 		"nodes/**/*.json",
+		"test/**/*.ts",
 		"types/**/*.ts",
 		"utils/**/*.ts"
 	],
-	"exclude": [
-		"node_modules",
-		"nodes/**/*.test.ts",
-		"credentials/**/*.test.ts",
-		"utils/**/*.test.ts",
-		"test/**"
-	]
+	"exclude": ["nodes/**/*.test.ts", "test/**"]
 }

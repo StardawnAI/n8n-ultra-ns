@@ -6,8 +6,8 @@ import {
 	mockInstance,
 } from '@n8n/backend-test-utils';
 import { GlobalConfig } from '@n8n/config';
-import type { IWorkflowDb, Project, WorkflowEntity, WorkflowRepository, User } from '@n8n/db';
-import { SettingsRepository, WorkflowStatisticsRepository } from '@n8n/db';
+import type { IWorkflowDb, Project, WorkflowEntity, User } from '@n8n/db';
+import { WorkflowStatisticsRepository } from '@n8n/db';
 import { Container } from '@n8n/di';
 import {
 	QueryFailedError,
@@ -57,9 +57,6 @@ describe('WorkflowStatisticsService', () => {
 		beforeEach(async () => {
 			jest.restoreAllMocks();
 			await testDb.truncate(['WorkflowStatistics']);
-			// Clear first production failure setting
-			const settingsRepository = Container.get(SettingsRepository);
-			await settingsRepository.delete({ key: 'instance.firstProductionFailure' });
 		});
 
 		test.each<WorkflowExecuteMode>(['cli', 'error', 'retry', 'trigger', 'webhook', 'evaluation'])(
@@ -87,7 +84,6 @@ describe('WorkflowStatisticsService', () => {
 					latestEvent: expect.any(Date),
 					name: 'production_success',
 					workflowId: workflow.id,
-					workflowName: workflow.name,
 				});
 			},
 		);
@@ -119,7 +115,6 @@ describe('WorkflowStatisticsService', () => {
 					latestEvent: expect.any(Date),
 					name: mode === 'manual' ? 'manual_success' : 'production_success',
 					workflowId: workflow.id,
-					workflowName: workflow.name,
 				});
 			},
 		);
@@ -168,7 +163,6 @@ describe('WorkflowStatisticsService', () => {
 					latestEvent: expect.any(Date),
 					name: status === 'success' ? 'production_success' : 'production_error',
 					workflowId: workflow.id,
-					workflowName: workflow.name,
 				});
 			},
 		);
@@ -200,7 +194,6 @@ describe('WorkflowStatisticsService', () => {
 					latestEvent: expect.any(Date),
 					name: 'production_error',
 					workflowId: workflow.id,
-					workflowName: workflow.name,
 				});
 			},
 		);
@@ -252,10 +245,7 @@ describe('WorkflowStatisticsService', () => {
 
 			// ASSERT
 			expect(updateSettingsSpy).not.toHaveBeenCalled();
-			expect(emitSpy).not.toHaveBeenCalledWith(
-				'first-production-workflow-succeeded',
-				expect.anything(),
-			);
+			expect(emitSpy).not.toHaveBeenCalled();
 		});
 
 		test('does not update user settings and does not emit first-production-workflow-succeeded for successive executions', async () => {
@@ -279,145 +269,6 @@ describe('WorkflowStatisticsService', () => {
 			expect(emitSpy).not.toHaveBeenCalled();
 		});
 
-		test('emits instance-first-production-workflow-failed event on first production failure when no error workflows exist', async () => {
-			// ARRANGE
-			const runData: IRun = {
-				finished: false,
-				status: 'error',
-				data: createEmptyRunExecutionData(),
-				mode: 'trigger',
-				startedAt: new Date(),
-			};
-
-			// Create a fresh instance with workflowRepository returning false (no error workflows exist)
-			const workflowRepositoryNoErrorWorkflows = mock<WorkflowRepository>();
-			(
-				workflowRepositoryNoErrorWorkflows as unknown as {
-					hasAnyWorkflowsWithErrorWorkflow: jest.Mock;
-				}
-			).hasAnyWorkflowsWithErrorWorkflow.mockResolvedValue(false);
-			const settingsRepository = Container.get(SettingsRepository);
-			const statisticsService = new WorkflowStatisticsService(
-				mock(),
-				workflowStatisticsRepository,
-				Container.get(OwnershipService),
-				userService,
-				Container.get(EventService),
-				settingsRepository,
-				workflowRepositoryNoErrorWorkflows,
-			);
-			const emitSpy = jest.spyOn(Container.get(EventService), 'emit');
-
-			// ACT
-			await statisticsService.workflowExecutionCompleted(workflow, runData);
-
-			// ASSERT
-			expect(emitSpy).toHaveBeenCalledWith('instance-first-production-workflow-failed', {
-				projectId: personalProject.id,
-				workflowId: workflow.id,
-				workflowName: workflow.name,
-				userId: user.id,
-			});
-		});
-
-		test('does not emit instance-first-production-workflow-failed event on successive production failures', async () => {
-			// ARRANGE
-			const runData: IRun = {
-				finished: false,
-				status: 'error',
-				data: createEmptyRunExecutionData(),
-				mode: 'trigger',
-				startedAt: new Date(),
-			};
-
-			// Create a fresh instance with workflowRepository returning false (no error workflows exist)
-			const workflowRepositoryNoErrorWorkflows = mock<WorkflowRepository>();
-			(
-				workflowRepositoryNoErrorWorkflows as unknown as {
-					hasAnyWorkflowsWithErrorWorkflow: jest.Mock;
-				}
-			).hasAnyWorkflowsWithErrorWorkflow.mockResolvedValue(false);
-			const settingsRepository = Container.get(SettingsRepository);
-			const statisticsService = new WorkflowStatisticsService(
-				mock(),
-				workflowStatisticsRepository,
-				Container.get(OwnershipService),
-				userService,
-				Container.get(EventService),
-				settingsRepository,
-				workflowRepositoryNoErrorWorkflows,
-			);
-
-			// First failure - this will set the instance.firstProductionFailure setting
-			await statisticsService.workflowExecutionCompleted(workflow, runData);
-			const emitSpy = jest.spyOn(Container.get(EventService), 'emit');
-
-			// ACT - Second failure
-			await statisticsService.workflowExecutionCompleted(workflow, runData);
-
-			// ASSERT
-			expect(emitSpy).not.toHaveBeenCalled();
-		});
-
-		test('does not emit instance-first-production-workflow-failed event when error workflows exist', async () => {
-			// ARRANGE
-			const runData: IRun = {
-				finished: false,
-				status: 'error',
-				data: createEmptyRunExecutionData(),
-				mode: 'trigger',
-				startedAt: new Date(),
-			};
-
-			// Create a fresh instance with workflowRepository returning true (error workflows exist)
-			const workflowRepositoryWithErrorWorkflows = mock<WorkflowRepository>();
-			(
-				workflowRepositoryWithErrorWorkflows as unknown as {
-					hasAnyWorkflowsWithErrorWorkflow: jest.Mock;
-				}
-			).hasAnyWorkflowsWithErrorWorkflow.mockResolvedValue(true);
-			const settingsRepository = Container.get(SettingsRepository);
-			const statisticsService = new WorkflowStatisticsService(
-				mock(),
-				workflowStatisticsRepository,
-				Container.get(OwnershipService),
-				userService,
-				Container.get(EventService),
-				settingsRepository,
-				workflowRepositoryWithErrorWorkflows,
-			);
-			const emitSpy = jest.spyOn(Container.get(EventService), 'emit');
-
-			// ACT
-			await statisticsService.workflowExecutionCompleted(workflow, runData);
-
-			// ASSERT
-			expect(emitSpy).not.toHaveBeenCalledWith(
-				'instance-first-production-workflow-failed',
-				expect.any(Object),
-			);
-		});
-
-		test('does not emit instance-first-production-workflow-failed event for non-production mode failures', async () => {
-			// ARRANGE
-			const runData: IRun = {
-				finished: false,
-				status: 'error',
-				data: createEmptyRunExecutionData(),
-				mode: 'manual', // non-production mode
-				startedAt: new Date(),
-			};
-			const emitSpy = jest.spyOn(Container.get(EventService), 'emit');
-
-			// ACT
-			await workflowStatisticsService.workflowExecutionCompleted(workflow, runData);
-
-			// ASSERT
-			expect(emitSpy).not.toHaveBeenCalledWith(
-				'instance-first-production-workflow-failed',
-				expect.any(Object),
-			);
-		});
 		test('emits first-production-workflow-succeeded with null userId for team project', async () => {
 			// ARRANGE
 			const teamProject = await createTeamProject('Team Project');
@@ -442,54 +293,6 @@ describe('WorkflowStatisticsService', () => {
 				projectId: teamProject.id,
 				workflowId: teamWorkflow.id,
 				userId: null,
-			});
-		});
-
-		test('emits instance-first-production-workflow-failed with instance owner for team project', async () => {
-			// ARRANGE
-			const teamProject = await createTeamProject('Team Project for Failure');
-			const teamWorkflow = await createWorkflow({ settings: {} }, teamProject);
-			const runData: IRun = {
-				finished: false,
-				status: 'error',
-				data: createEmptyRunExecutionData(),
-				mode: 'trigger',
-				startedAt: new Date(),
-			};
-
-			// Create a fresh instance with workflowRepository returning false (no error workflows exist)
-			const workflowRepositoryNoErrorWorkflows = mock<WorkflowRepository>();
-			(
-				workflowRepositoryNoErrorWorkflows as unknown as {
-					hasAnyWorkflowsWithErrorWorkflow: jest.Mock;
-				}
-			).hasAnyWorkflowsWithErrorWorkflow.mockResolvedValue(false);
-			const ownershipService = Container.get(OwnershipService);
-			const settingsRepository = Container.get(SettingsRepository);
-			const statisticsService = new WorkflowStatisticsService(
-				mock(),
-				workflowStatisticsRepository,
-				ownershipService,
-				userService,
-				Container.get(EventService),
-				settingsRepository,
-				workflowRepositoryNoErrorWorkflows,
-			);
-			const emitSpy = jest.spyOn(Container.get(EventService), 'emit');
-
-			// Get the instance owner to verify the userId
-			const instanceOwner = await ownershipService.getInstanceOwner();
-
-			// ACT
-			await statisticsService.workflowExecutionCompleted(teamWorkflow, runData);
-
-			// ASSERT
-			// For team projects, it should fall back to instance owner
-			expect(emitSpy).toHaveBeenCalledWith('instance-first-production-workflow-failed', {
-				projectId: teamProject.id,
-				workflowId: teamWorkflow.id,
-				workflowName: teamWorkflow.name,
-				userId: instanceOwner.id,
 			});
 		});
 	});
@@ -523,19 +326,12 @@ describe('WorkflowStatisticsService', () => {
 			Object.assign(entityManager, { connection: dataSource });
 			eventService = mock<EventService>();
 			workflowStatisticsRepository = new WorkflowStatisticsRepository(dataSource, globalConfig);
-			const settingsRepository = mock<SettingsRepository>();
-			const workflowRepository = mock<WorkflowRepository>();
-			(
-				workflowRepository as unknown as { hasAnyWorkflowsWithErrorWorkflow: jest.Mock }
-			).hasAnyWorkflowsWithErrorWorkflow.mockResolvedValue(false);
 			workflowStatisticsService = new WorkflowStatisticsService(
 				mock(),
 				workflowStatisticsRepository,
 				ownershipService,
 				userService,
 				eventService,
-				settingsRepository,
-				workflowRepository,
 			);
 			globalConfig.diagnostics.enabled = true;
 			globalConfig.deployment.type = 'n8n-testing';

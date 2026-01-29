@@ -17,12 +17,6 @@ vi.mock('@n8n/i18n', async () => {
 	};
 });
 
-const mockCredentialType: ICredentialType = {
-	name: 'testCredential',
-	displayName: 'Test Credential',
-	properties: [],
-};
-
 const defaultRenderOptions: RenderOptions<typeof CredentialConfig> = {
 	pinia: createTestingPinia({
 		initialState: {
@@ -72,7 +66,7 @@ describe('CredentialConfig', () => {
 	});
 
 	it('should not call addCredentialTranslation when getCredentialTranslation returns null', async () => {
-		const testCredentialType = {
+		const mockCredentialType = {
 			name: 'testCredential',
 			displayName: 'Test Credential',
 		} as ICredentialType;
@@ -104,7 +98,7 @@ describe('CredentialConfig', () => {
 		renderComponent(
 			{
 				props: {
-					credentialType: testCredentialType,
+					credentialType: mockCredentialType,
 				},
 				pinia,
 			},
@@ -119,7 +113,7 @@ describe('CredentialConfig', () => {
 	});
 
 	it('should not call addCredentialTranslation when getCredentialTranslation returns undefined', async () => {
-		const testCredentialType2 = {
+		const mockCredentialType = {
 			name: 'testCredential',
 			displayName: 'Test Credential',
 		} as ICredentialType;
@@ -151,7 +145,7 @@ describe('CredentialConfig', () => {
 		renderComponent(
 			{
 				props: {
-					credentialType: testCredentialType2,
+					credentialType: mockCredentialType,
 				},
 				pinia,
 			},
@@ -163,167 +157,5 @@ describe('CredentialConfig', () => {
 
 		// Verify that addCredentialTranslation was not called
 		expect(addCredentialTranslation).not.toHaveBeenCalled();
-	});
-
-	describe('Dynamic Credentials Section', () => {
-		it('should not display dynamic credentials section when isDynamicCredentialsEnabled is false', async () => {
-			renderComponent({
-				props: {
-					isManaged: false,
-					mode: 'new',
-					credentialType: mockCredentialType,
-					credentialProperties: [],
-					credentialData: {} as ICredentialDataDecryptedObject,
-					isDynamicCredentialsEnabled: false,
-					isOAuthType: true,
-					isNewCredential: true,
-					credentialPermissions: {
-						create: true,
-						update: true,
-						read: true,
-						delete: true,
-						share: true,
-						list: true,
-						move: true,
-					},
-				},
-			});
-
-			expect(screen.queryByTestId('dynamic-credentials-section')).not.toBeInTheDocument();
-		});
-
-		it('should not display dynamic credentials section when isOAuthType is false', async () => {
-			renderComponent({
-				props: {
-					isManaged: false,
-					mode: 'new',
-					credentialType: mockCredentialType,
-					credentialProperties: [],
-					credentialData: {} as ICredentialDataDecryptedObject,
-					isDynamicCredentialsEnabled: true,
-					isOAuthType: false,
-					isNewCredential: true,
-					credentialPermissions: {
-						create: true,
-						update: true,
-						read: true,
-						delete: true,
-						share: true,
-						list: true,
-						move: true,
-					},
-				},
-			});
-
-			expect(screen.queryByTestId('dynamic-credentials-section')).not.toBeInTheDocument();
-		});
-
-		it('should not display dynamic credentials section when user lacks create permission for new credential', async () => {
-			renderComponent({
-				props: {
-					isManaged: false,
-					mode: 'new',
-					credentialType: mockCredentialType,
-					credentialProperties: [],
-					credentialData: {} as ICredentialDataDecryptedObject,
-					isDynamicCredentialsEnabled: true,
-					isOAuthType: true,
-					isNewCredential: true,
-					credentialPermissions: {
-						create: false,
-						update: false,
-						read: true,
-						delete: false,
-						share: false,
-						list: true,
-						move: false,
-					},
-				},
-			});
-
-			expect(screen.queryByTestId('dynamic-credentials-section')).not.toBeInTheDocument();
-		});
-
-		it('should not display dynamic credentials section when user lacks update permission for existing credential', async () => {
-			renderComponent({
-				props: {
-					isManaged: false,
-					mode: 'edit',
-					credentialType: mockCredentialType,
-					credentialProperties: [],
-					credentialData: {} as ICredentialDataDecryptedObject,
-					isDynamicCredentialsEnabled: true,
-					isOAuthType: true,
-					isNewCredential: false,
-					credentialPermissions: {
-						create: false,
-						update: false,
-						read: true,
-						delete: false,
-						share: false,
-						list: true,
-						move: false,
-					},
-				},
-			});
-
-			expect(screen.queryByTestId('dynamic-credentials-section')).not.toBeInTheDocument();
-		});
-
-		it('should display dynamic credentials section when all conditions are met for new credential', async () => {
-			renderComponent({
-				props: {
-					isManaged: false,
-					mode: 'new',
-					credentialType: mockCredentialType,
-					credentialProperties: [],
-					credentialData: {} as ICredentialDataDecryptedObject,
-					isDynamicCredentialsEnabled: true,
-					isOAuthType: true,
-					isNewCredential: true,
-					isResolvable: false,
-					credentialPermissions: {
-						create: true,
-						update: false,
-						read: true,
-						delete: false,
-						share: false,
-						list: true,
-						move: false,
-					},
-				},
-			});
-
-			expect(screen.getByTestId('dynamic-credentials-section')).toBeInTheDocument();
-			expect(screen.getByTestId('dynamic-credentials-toggle')).toBeInTheDocument();
-		});
-
-		it('should display dynamic credentials section when all conditions are met for existing credential', async () => {
-			renderComponent({
-				props: {
-					isManaged: false,
-					mode: 'edit',
-					credentialType: mockCredentialType,
-					credentialProperties: [],
-					credentialData: {} as ICredentialDataDecryptedObject,
-					isDynamicCredentialsEnabled: true,
-					isOAuthType: true,
-					isNewCredential: false,
-					isResolvable: false,
-					credentialPermissions: {
-						create: false,
-						update: true,
-						read: true,
-						delete: false,
-						share: false,
-						list: true,
-						move: false,
-					},
-				},
-			});
-
-			expect(screen.getByTestId('dynamic-credentials-section')).toBeInTheDocument();
-			expect(screen.getByTestId('dynamic-credentials-toggle')).toBeInTheDocument();
-		});
 	});
 });

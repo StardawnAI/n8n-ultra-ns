@@ -7,7 +7,6 @@ import {
 	type FilterValue,
 	type NodeConnectionType,
 	nodeConnectionTypes,
-	type IBinaryData,
 } from './interfaces';
 
 export function isResourceLocatorValue(value: unknown): value is INodeParameterResourceLocator {
@@ -73,13 +72,4 @@ export const isFilterValue = (value: unknown): value is FilterValue => {
 
 export const isNodeConnectionType = (value: unknown): value is NodeConnectionType => {
 	return nodeConnectionTypes.includes(value as NodeConnectionType);
-};
-
-export const isBinaryValue = (value: unknown): value is IBinaryData => {
-	return (
-		typeof value === 'object' &&
-		value !== null &&
-		'mimeType' in value &&
-		('data' in value || 'id' in value)
-	);
 };

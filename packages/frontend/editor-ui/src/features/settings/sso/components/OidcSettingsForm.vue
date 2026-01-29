@@ -4,7 +4,8 @@ import { MODAL_CONFIRM } from '@/app/constants';
 import { SupportedProtocols, useSSOStore } from '../sso.store';
 import { useI18n } from '@n8n/i18n';
 
-import { N8nButton, N8nCheckbox, N8nInput, N8nOption, N8nSelect } from '@n8n/design-system';
+import { ElCheckbox } from 'element-plus';
+import { N8nButton, N8nInput, N8nOption, N8nSelect } from '@n8n/design-system';
 import { computed, onMounted, ref } from 'vue';
 import { useToast } from '@/app/composables/useToast';
 import { useMessage } from '@/app/composables/useMessage';
@@ -271,11 +272,9 @@ onMounted(async () => {
 			>
 		</div>
 		<div :class="[$style.group, $style.checkboxGroup]">
-			<N8nCheckbox
-				v-model="ssoStore.isOidcLoginEnabled"
-				data-test-id="sso-oidc-toggle"
-				:label="i18n.baseText('settings.sso.activated')"
-			/>
+			<ElCheckbox v-model="ssoStore.isOidcLoginEnabled" data-test-id="sso-oidc-toggle">{{
+				i18n.baseText('settings.sso.activated')
+			}}</ElCheckbox>
 		</div>
 
 		<div :class="$style.buttons">

@@ -12,14 +12,8 @@ import { useUIStore } from '@/app/stores/ui.store';
 import { useI18n } from '@n8n/i18n';
 import { createEventBus } from '@n8n/utils/event-bus';
 import { computed, ref } from 'vue';
-import {
-	N8nButton,
-	N8nCheckbox,
-	N8nInput,
-	N8nInputLabel,
-	N8nLink,
-	N8nText,
-} from '@n8n/design-system';
+import { ElCheckbox } from 'element-plus';
+import { N8nButton, N8nInput, N8nInputLabel, N8nLink, N8nText } from '@n8n/design-system';
 
 interface ModalData {
 	packageName?: string;
@@ -155,22 +149,20 @@ const onLearnMoreLinkClick = () => {
 						v-text="infoTextErrorMessage"
 					></span>
 				</div>
-				<N8nCheckbox
+				<ElCheckbox
 					v-model="userAgreed"
 					:class="[$style.checkbox, checkboxWarning ? $style.error : '', 'mt-l']"
 					:disabled="loading"
 					data-test-id="user-agreement-checkbox"
-					@change="onCheckboxChecked"
+					@update:model-value="onCheckboxChecked"
 				>
-					<template #label>
-						<N8nText>
-							{{ i18n.baseText('settings.communityNodes.installModal.checkbox.label') }} </N8nText
-						><br />
-						<N8nLink :to="COMMUNITY_NODES_RISKS_DOCS_URL" @click="onLearnMoreLinkClick">{{
-							i18n.baseText('generic.moreInfo')
-						}}</N8nLink>
-					</template>
-				</N8nCheckbox>
+					<N8nText>
+						{{ i18n.baseText('settings.communityNodes.installModal.checkbox.label') }} </N8nText
+					><br />
+					<N8nLink :to="COMMUNITY_NODES_RISKS_DOCS_URL" @click="onLearnMoreLinkClick">{{
+						i18n.baseText('generic.moreInfo')
+					}}</N8nLink>
+				</ElCheckbox>
 			</div>
 		</template>
 		<template #footer>

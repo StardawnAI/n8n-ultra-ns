@@ -266,7 +266,6 @@ describe('BuiltInsParser', () => {
 				'$fromai',
 				'$fromAi',
 				'$items',
-				'$tool',
 				'$json',
 				'$node',
 				'$self',

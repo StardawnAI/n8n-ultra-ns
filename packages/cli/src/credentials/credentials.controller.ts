@@ -194,7 +194,6 @@ export class CredentialsController {
 			projectId: project?.id,
 			projectType: project?.type,
 			uiContext: payload.uiContext,
-			isDynamic: newCredential.isResolvable ?? false,
 		});
 
 		return newCredential;
@@ -275,7 +274,6 @@ export class CredentialsController {
 			user: req.user,
 			credentialType: credential.type,
 			credentialId: credential.id,
-			isDynamic: newCredentialData.isResolvable ?? false,
 		});
 
 		const scopes = await this.credentialsService.getCredentialScopes(req.user, credential.id);

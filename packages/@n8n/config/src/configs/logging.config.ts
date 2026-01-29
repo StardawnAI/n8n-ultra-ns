@@ -24,6 +24,7 @@ export const LOG_SCOPES = [
 	'data-table',
 	'cron',
 	'community-nodes',
+	'legacy-sqlite-execution-recovery',
 	'chat-hub',
 	'breaking-changes',
 	'circuit-breaker',

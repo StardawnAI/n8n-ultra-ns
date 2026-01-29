@@ -2,7 +2,10 @@
 import { computed, ref, h, onMounted, onBeforeUnmount, useTemplateRef } from 'vue';
 import type { VNode } from 'vue';
 import Modal from '@/app/components/Modal.vue';
-import { WORKFLOW_PUBLISH_MODAL_KEY } from '@/app/constants';
+import {
+	WORKFLOW_PUBLISH_MODAL_KEY,
+	WORKFLOW_ACTIVATION_CONFLICTING_WEBHOOK_MODAL_KEY,
+} from '@/app/constants';
 import { telemetry } from '@/app/plugins/telemetry';
 import { useWorkflowsStore } from '@/app/stores/workflows.store';
 import { createEventBus } from '@n8n/utils/event-bus';
@@ -12,7 +15,9 @@ import WorkflowPublishForm from '@/app/components/WorkflowPublishForm.vue';
 import { getActivatableTriggerNodes } from '@/app/utils/nodeTypesUtils';
 import { useToast } from '@/app/composables/useToast';
 import { useWorkflowActivate } from '@/app/composables/useWorkflowActivate';
+import { useWorkflowHelpers } from '@/app/composables/useWorkflowHelpers';
 import { useCredentialsStore } from '@/features/credentials/credentials.store';
+import { useUIStore } from '@/app/stores/ui.store';
 import { OPEN_AI_API_CREDENTIAL_TYPE } from 'n8n-workflow';
 import type { INodeUi } from '@/Interface';
 import type { IUsedCredential } from '@/features/credentials/credentials.types';
@@ -24,8 +29,10 @@ const i18n = useI18n();
 
 const workflowsStore = useWorkflowsStore();
 const credentialsStore = useCredentialsStore();
+const uiStore = useUIStore();
 const { showMessage } = useToast();
 const workflowActivate = useWorkflowActivate();
+const workflowHelpers = useWorkflowHelpers();
 const publishing = ref(false);
 
 const publishForm = useTemplateRef<InstanceType<typeof WorkflowPublishForm>>('publishForm');
@@ -160,8 +167,28 @@ async function handlePublish() {
 
 	publishing.value = true;
 
+	// Check for conflicting webhooks before activating
+	const conflictData = await workflowHelpers.checkConflictingWebhooks(workflowsStore.workflow.id);
+
+	if (conflictData) {
+		const { trigger, conflict } = conflictData;
+		const conflictingWorkflow = await workflowsStore.fetchWorkflow(conflict.workflowId);
+
+		uiStore.openModalWithData({
+			name: WORKFLOW_ACTIVATION_CONFLICTING_WEBHOOK_MODAL_KEY,
+			data: {
+				triggerType: trigger.type,
+				workflowName: conflictingWorkflow.name,
+				...conflict,
+			},
+		});
+
+		publishing.value = false;
+		return;
+	}
+
 	// Activate the workflow
-	const { success, errorHandled } = await workflowActivate.publishWorkflow(
+	const success = await workflowActivate.publishWorkflow(
 		workflowsStore.workflow.id,
 		workflowsStore.workflow.versionId,
 		{
@@ -189,9 +216,7 @@ async function handlePublish() {
 		modalBus.emit('close');
 	} else {
 		// Display activation error if it fails
-		if (!errorHandled) {
-			await displayActivationError();
-		}
+		await displayActivationError();
 	}
 
 	publishing.value = false;

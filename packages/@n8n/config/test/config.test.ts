@@ -96,11 +96,13 @@ describe('GlobalConfig', () => {
 			},
 			sqlite: {
 				database: 'database.sqlite',
+				enableWAL: true,
 				executeVacuumOnStartup: false,
 				poolSize: 3,
 			},
 			tablePrefix: '',
 			type: 'sqlite',
+			isLegacySqlite: false,
 			pingIntervalSeconds: 2,
 		} as DatabaseConfig,
 		credentials: {
@@ -137,7 +139,6 @@ describe('GlobalConfig', () => {
 					'user-invited': '',
 					'password-reset-requested': '',
 					'workflow-deactivated': '',
-					'workflow-failure': '',
 					'workflow-shared': '',
 					'project-shared': '',
 				},
@@ -409,16 +410,14 @@ describe('GlobalConfig', () => {
 		// @ts-expect-error structuredClone ignores properties defined as a getter
 		ai: {
 			enabled: false,
-			timeout: 3600000,
 		},
 		workflowHistoryCompaction: {
 			batchDelayMs: 1_000,
 			batchSize: 100,
-			optimizingMinimumAgeHours: 0.25,
-			optimizingTimeWindowHours: 2,
-			trimmingMinimumAgeDays: 7,
-			trimmingTimeWindowDays: 2,
-			trimOnStartUp: false,
+			compactingMinimumAgeHours: 3,
+			compactingTimeWindowHours: 2,
+			compactOnStartUp: false,
+			minimumTimeBetweenSessionsMs: 20 * 60 * 1000,
 		},
 	};
 
@@ -527,6 +526,7 @@ describe('GlobalConfig', () => {
 		it('on invalid value, should warn and fall back to default value', () => {
 			process.env = {
 				N8N_RUNNERS_MODE: 'non-existing-mode',
+				N8N_RUNNERS_ENABLED: 'true',
 				DB_TYPE: 'postgresdb',
 			};
 

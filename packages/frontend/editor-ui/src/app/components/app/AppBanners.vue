@@ -6,7 +6,7 @@ import { VIEWS } from '@/app/constants';
 
 const route = useRoute();
 
-const isDemoMode = computed(() => route.name === VIEWS.DEMO || route.name === VIEWS.DEMO_DIFF);
+const isDemoMode = computed(() => route.name === VIEWS.DEMO);
 </script>
 
 <template>

@@ -1,12 +1,18 @@
 <script lang="ts" setup>
+import { defineAsyncComponent } from 'vue';
 import BaseLayout from './BaseLayout.vue';
-import AppSidebar from '@/app/components/app/AppSidebar.vue';
+
+const AppSidebar = defineAsyncComponent(
+	async () => await import('@/app/components/app/AppSidebar.vue'),
+);
 </script>
 
 <template>
 	<BaseLayout>
 		<template #sidebar>
-			<AppSidebar />
+			<Suspense>
+				<AppSidebar />
+			</Suspense>
 		</template>
 		<RouterView />
 	</BaseLayout>
