@@ -95,7 +95,7 @@ jobs:
           git remote add stardawn https://x-access-token:${{ secrets.GH_PAT }}@github.com/StardawnAI/n8n-advanced.git || true
           git fetch stardawn master
 
-          git checkout stardawn/master -- .github/scripts/inject-custom-nodes.sh
+          git checkout stardawn/master -- .github/scripts/stardawn-inject.sh
           git checkout stardawn/master -- STARDAWN_VERSION
           git checkout stardawn/master -- CUSTOM_NODES.txt
 
@@ -110,8 +110,8 @@ jobs:
       - name: Inject Custom Nodes
         if: steps.check.outputs.skip_sync != 'true'
         run: |
-          chmod +x .github/scripts/inject-custom-nodes.sh
-          bash .github/scripts/inject-custom-nodes.sh
+          chmod +x .github/scripts/stardawn-inject.sh
+          bash .github/scripts/stardawn-inject.sh
 
       - name: Get Node.js version from n8n
         if: steps.check.outputs.skip_sync != 'true'
