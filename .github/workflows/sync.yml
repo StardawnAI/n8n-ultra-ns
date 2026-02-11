@@ -29,25 +29,36 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          for i in {1..5}; do
-            LATEST_RELEASE=$(gh release view --repo n8n-io/n8n --json tagName --jq .tagName) && break
-            sleep 10
-          done
+          # Fetch all release tags (stable + pre-release), extract semver, sort numerically, take highest
+          ALL_TAGS=$(gh release list --repo n8n-io/n8n --limit 50 \
+            --json tagName --jq '.[].tagName')
 
-          if [ -z "$LATEST_RELEASE" ]; then
-            echo "CRITICAL: Could not find release tag. Aborting."
+          if [ -z "$ALL_TAGS" ]; then
+            echo "CRITICAL: Could not fetch any release tags. Aborting."
             exit 1
           fi
 
+          HIGHEST_VERSION=$(echo "$ALL_TAGS" \
+            | grep -oP '\d+\.\d+\.\d+' \
+            | sort -t. -k1,1n -k2,2n -k3,3n \
+            | tail -1)
+
+          if [ -z "$HIGHEST_VERSION" ]; then
+            echo "CRITICAL: Could not determine highest version. Aborting."
+            exit 1
+          fi
+
+          LATEST_RELEASE="n8n@${HIGHEST_VERSION}"
+          echo "Highest n8n version found: $LATEST_RELEASE"
           echo "version=$LATEST_RELEASE" >> $GITHUB_OUTPUT
 
           OUR_LATEST_TAG=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
 
-          echo "n8n's latest release: $LATEST_RELEASE"
+          echo "n8n highest version: $LATEST_RELEASE"
           echo "Our latest release: $OUR_LATEST_TAG"
 
           if [ "$LATEST_RELEASE" != "$OUR_LATEST_TAG" ]; then
-            echo "n8n has a new release ($LATEST_RELEASE). Proceeding..."
+            echo "New highest version ($LATEST_RELEASE) differs from ours ($OUR_LATEST_TAG). Proceeding..."
             echo "skip_sync=false" >> $GITHUB_OUTPUT
           else
             TAG_INFO=$(gh api repos/$GITHUB_REPOSITORY/git/refs/tags/$OUR_LATEST_TAG 2>/dev/null || echo "")

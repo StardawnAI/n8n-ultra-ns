@@ -67,10 +67,14 @@ jobs:
         id: versions
         run: |
           STARDAWN_VERSION=$(cat STARDAWN_VERSION 2>/dev/null || echo "1.0")
-          # For ns, get the pre-release version
-          N8N_VERSION=$(gh release list --repo n8n-io/n8n --limit 10 --json tagName,isPrerelease --jq '.[] | select(.isPrerelease) | .tagName' | head -n 1 | sed 's/n8n@//')
+          # Get the numerically highest n8n version (stable or pre-release)
+          N8N_VERSION=$(gh release list --repo n8n-io/n8n --limit 50 \
+            --json tagName --jq '.[].tagName' \
+            | grep -oP '\d+\.\d+\.\d+' \
+            | sort -t. -k1,1n -k2,2n -k3,3n \
+            | tail -1)
           if [ -z "$N8N_VERSION" ]; then
-            N8N_VERSION=$(gh release view --repo n8n-io/n8n --json tagName --jq .tagName | sed 's/n8n@//')
+            N8N_VERSION="unknown"
           fi
           echo "stardawn=$STARDAWN_VERSION" >> $GITHUB_OUTPUT
           echo "n8n=$N8N_VERSION" >> $GITHUB_OUTPUT
