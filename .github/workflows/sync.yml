@@ -92,6 +92,8 @@ jobs:
           git remote add n8n-official https://github.com/n8n-io/n8n.git || true
           git fetch n8n-official --tags --force
 
+          # CRITICAL: Delete packages/ first so files removed upstream don't linger
+          rm -rf packages/
           git checkout "$N8N_VERSION" -- packages/
           git checkout "$N8N_VERSION" -- package.json
           git checkout "$N8N_VERSION" -- pnpm-lock.yaml
@@ -137,11 +139,21 @@ jobs:
         with:
           node-version: ${{ steps.node.outputs.version }}
 
-      - name: Install Dependencies
+      - name: Install deps + Build (corepack pnpm)
         if: steps.check.outputs.skip_sync != 'true'
         run: |
-          npm install -g pnpm
-          pnpm install --no-frozen-lockfile
+          set -euo pipefail
+          corepack enable
+          pnpm --version
+
+          # Network resilience
+          pnpm config set fetch-retries 10
+          pnpm config set fetch-retry-mintimeout 20000
+          pnpm config set fetch-retry-maxtimeout 120000
+          pnpm config set network-concurrency 8
+
+          pnpm install --frozen-lockfile
+          pnpm build
 
       - name: Commit and Push
         if: steps.check.outputs.skip_sync != 'true'
